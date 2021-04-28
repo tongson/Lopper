@@ -224,4 +224,5 @@ return {
 	Panic = Panic,
 	Ok = Ok,
 	Notify = Notify,
+	ID = ID,
 }
