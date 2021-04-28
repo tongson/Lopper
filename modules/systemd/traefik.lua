@@ -1,5 +1,5 @@
 local crypto = require("crypto")
-local json = require("dkjson")
+local json = require("json")
 local refmt = require("refmt")
 local encode = crypto.base64_encode
 return setmetatable({}, {
@@ -27,6 +27,7 @@ Restart=on-failure
 RestartSec=5
 Type=forking
 PIDFile=/run/podman-traefik.pid
+TimeoutStartSec=infinity
 TimeoutStopSec=20
 SystemCallArchitectures=native
 MemoryDenyWriteExecute=yes
