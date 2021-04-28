@@ -263,7 +263,7 @@ setmetatable(M, {
 				})
 			end
 		end
-		if next(instance.ports) then
+		if instance.ports and next(instance.ports) then
 			local kx, ky = kv_service:put(schema.service_ports:format(M.param.NAME), json.encode(instance.ports))
 			panic(kx, "unable to add ports to etcdb", {
 				error = ky
@@ -286,8 +286,6 @@ setmetatable(M, {
 		end
 		if instance.ip then
 			assign_ip(M.param.NAME, instance.ip)
-		end
-		do
 			local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), instance.ip)
 			panic(kx, "unable to add ip to etcdb", {
 				error = ky
