@@ -1,4 +1,6 @@
 return {
+ports = { "3306" },
+ip = "0.255.128.1",
 volumes = {
 	["mariadb-data"] = {
 		"chown -R 999:999 __MOUNTPOINT__",
@@ -18,9 +20,10 @@ After=network-online.target
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 RestartSec=5
+TimeoutStartSec=infinity
+TimeoutStopSec=120
 Type=forking
 PIDFile=/run/podman-mariadb.pid
-TimeoutStopSec=20
 SystemCallArchitectures=native
 MemoryDenyWriteExecute=yes
 LockPersonality=yes
@@ -49,6 +52,7 @@ ExecStartPre=-/usr/bin/podman rm -i -v -f mariadb
 ExecStop=/usr/bin/podman stop -t 12 mariadb
 ExecStopPost=-/usr/bin/podman rm -i -v -f mariadb
 ExecStart=/usr/bin/podman run --name mariadb \
+--network host \
 --hostname mariadb  \
 --cap-drop all \
 --cap-add setgid \
@@ -63,10 +67,9 @@ ExecStart=/usr/bin/podman run --name mariadb \
 --ulimit nproc=65536:65536 \
 --memory 0 \
 --cpuset-cpus __CPUS__ \
--p 3306:3306/tcp \
 -v mariadb-data:/var/lib/mysql:rw \
 -v mariadb-secret:/etc/mysql/secret \
-__ID__ --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci --wait_timeout=28800 --log-warnings=0 --port=3306
+__ID__ --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci --wait_timeout=28800 --log-warnings=0 --bind-address=__IP__ --port=3306
 
 [Install]
 WantedBy=multi-user.target
