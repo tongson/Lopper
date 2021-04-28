@@ -43,7 +43,8 @@ local Panic = function(msg, tbl)
 	Notify(msg, tbl)     --> notification on failure! Last cry before dying
 	os.exit(1)
 end
-local get_if_addr = function(interface)
+local get_if_addr = function(interface, ver)
+	ver = ver or "inet"
 	local ip = exec.ctx("ip")
 	local ret, so, se = ip({"-j", "addr"})
 	if not ret then
@@ -58,7 +59,7 @@ local get_if_addr = function(interface)
 	for _, v in ipairs(j) do
 		if v.ifname == interface then
 			for _, vv in ipairs(v["addr_info"]) do
-				if vv.family == "inet" then
+				if vv.family == ver then
 					return vv["local"]
 				end
 			end
