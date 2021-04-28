@@ -126,18 +126,18 @@ local volume = function(vt)
 				stdout = so,
 				stderr = se,
 			})
-			local mountpoint = volumes(x)
-			local sh = exec.ctx("sh")
-			if type(y) == "table" then
-				for _, cmd in ipairs(y) do
-					ret, so, se = sh({ "-c", cmd:gsub("__MOUNTPOINT__", mountpoint) })
-					panic(ret, "error executing volume command", {
-						what = "sh",
-						command = "volume-command",
-						stdout = so,
-						stderr = se,
-					})
-				end
+		end
+		local mountpoint = volumes(x)
+		local sh = exec.ctx("sh")
+		if type(y) == "table" then
+			for _, cmd in ipairs(y) do
+				ret, so, se = sh({ "-c", cmd:gsub("__MOUNTPOINT__", mountpoint) })
+				panic(ret, "error executing volume command", {
+					what = "sh",
+					command = "volume-command",
+					stdout = so,
+					stderr = se,
+				})
 			end
 		end
 	end
