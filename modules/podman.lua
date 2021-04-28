@@ -131,7 +131,7 @@ local volume = function(vt)
 		local sh = exec.ctx("sh")
 		if type(y) == "table" then
 			for _, cmd in ipairs(y) do
-				ret, so, se = sh({ "-c", cmd:gsub("__MOUNTPOINT__", mountpoint) })
+				local ret, so, se = sh({ "-c", cmd:gsub("__MOUNTPOINT__", mountpoint) })
 				panic(ret, "error executing volume command", {
 					what = "sh",
 					command = "volume-command",
