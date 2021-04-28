@@ -1,4 +1,27 @@
 local DSL = "podman"
+local schema = {
+	service_ip = "/%s/ip", --> string
+	service_ports = "/%s/ports", --> list{string}
+}
+local dummy_netdev = [[
+[NetDev]
+Name=__NAME__
+Kind=dummy
+]]
+local dummy_network = [[
+[Match]
+Name=__NAME__
+[Network]
+Address=__IP__/32
+LinkLocalAddressing=no
+IPv6AcceptRA=no
+[Link]
+MTUBytes=65536
+]]
+fs.mkdir("/etc/podman.etcdb")
+local bitcask = require("bitcask")
+local kv_running = bitcask.open("/etc/podman.etcdb/running")
+local kv_service = bitcask.open("/etc/podman.etcdb/service")
 local lopper = require("lopper")
 local json = require("json")
 local util = require("util")
@@ -9,12 +32,14 @@ end
 local panic = function(ret, msg, tbl)
 	if not ret then
 		tbl._module = DSL
+		kv_running:close()
+		kv_service:close()
 		return lopper.Panic(msg, tbl)
 	end
 end
 local M = {}
 local podman = exec.ctx("podman")
-local start = function(name, unit, cpus, iid)
+local start = function(name, unit, cpus, iid, ip)
 	local systemctl = exec.ctx("systemctl")
 	systemctl({
 		"disable",
@@ -30,6 +55,14 @@ local start = function(name, unit, cpus, iid)
 		changed = false,
 		to = iid,
 	})
+	if unit:find("__IP__", 1, true) then
+		unit, changed = unit:gsub("__IP__", ip)
+		panic((changed == 1), "unable to interpolate IP", {
+			what = "string.gsub",
+			changed = false,
+			to = ip,
+		})
+	end
 	unit, changed = unit:gsub("__CPUS__", cpus)
 	panic((changed == 1), "unable to interpolate cpuset-cpus", {
 		what = "string.gsub",
@@ -92,6 +125,56 @@ local pull = function(u, t)
 		stdout = so,
 		stderr = se,
 	})
+end
+local assign_ip = function(n, ip)
+	local netdev = dummy_netdev:gsub("__NAME__", n)
+	local network = dummy_network:gsub("__NAME__", n)
+	network = network:gsub("__IP__", ip)
+	local fnetdev = ("/etc/systemd/network/%s.netdev"):format(n)
+	local fnetwork = ("/etc/systemd/network/%s.network"):format(n)
+	panic(fs.write(fnetdev, netdev), "unable to write .netdev configuration", {
+			what = "dummy network",
+			file = fnetdev,
+		})
+	panic(fs.write(fnetwork, network), "unable to write .network configuration", {
+			what = "dummy network",
+			file = fnetwork,
+		})
+	local systemctl = exec.ctx("systemctl")
+	systemctl({"restart", "systemd-networkd"})
+	local ipargs = {"-j", "addr", "show", "dev", n}
+	local ipcmd = util.retry_f(exec.ctx("ip"))
+	local ret, so, se = ipcmd(ipargs)
+	panic(ret, "failure running ip command", {
+		what = "dummy network",
+		stdout = so,
+		stderr = se,
+	})
+	local check = json.decode(so)
+	local got 
+	for _, cc in ipairs(check) do
+		if table.find(cc, n) then
+			got = true
+			break
+		end
+	end
+	panic(got, "ifname did not match", {
+		what = "dummy network",
+		expected = n,
+	})
+	for _, cc in ipairs(check) do
+		for _, dd in ipairs(cc.addr_info) do
+			if table.find(dd, ip) then
+				got = true
+				break
+			end
+		end
+	end
+	panic(got, "local IP did not match", {
+		what = "dummy network",
+		expected = ip,
+	})
+	return ip
 end
 local volume = function(vt)
 	local volumes = function(n)
@@ -180,6 +263,12 @@ setmetatable(M, {
 				})
 			end
 		end
+		if next(instance.ports) then
+			local kx, ky = kv_service:put(schema.service_ports:format(M.param.NAME), json.encode(instance.ports))
+			panic(kx, "unable to add ports to etcdb", {
+				error = ky
+			})
+		end
 		M.reg.unit = instance.unit
 
 		-- pull
@@ -195,8 +284,26 @@ setmetatable(M, {
 				id = M.reg.id,
 			})
 		end
+		if instance.ip then
+			assign_ip(M.param.NAME, instance.ip)
+		end
+		do
+			local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), instance.ip)
+			panic(kx, "unable to add ip to etcdb", {
+				error = ky
+			})
+		end
+		M.reg.ip = instance.ip
 		-- start
-		start(M.param.NAME, M.reg.unit, M.param.CPUS, M.reg.id)
+		start(M.param.NAME, M.reg.unit, M.param.CPUS, M.reg.id, M.reg.ip)
+		do
+			local kx, ky = kv_running:put(M.param.NAME, "ok")
+			panic(kx, "unable to add service to etcdb", {
+				error = ky
+			})
+		end
+		kv_running:close()
+		kv_service:close()
 		ok("Started systemd unit", {
 			name = M.param.NAME,
 		})
