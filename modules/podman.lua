@@ -160,13 +160,8 @@ local assign_ip = function(n, ip)
 		what = "dummy network",
 		expected = n,
 	})
-	for _, cc in ipairs(check) do
-		for _, dd in ipairs(cc.addr_info) do
-			if table.find(dd, ip) then
-				got = true
-				break
-			end
-		end
+	if table.find(check, ip) then
+		got = true
 	end
 	panic(got, "local IP did not match", {
 		what = "dummy network",
