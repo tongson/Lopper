@@ -19,7 +19,7 @@ After=network-online.target
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 RestartSec=5
-TimeoutStartSec=infinity
+TimeoutStartSec=120
 TimeoutStopSec=120
 Type=forking
 PIDFile=/run/podman-mariadb.pid
@@ -41,8 +41,6 @@ RestrictRealtime=yes
 #ProtectKernelTunables=yes
 #PrivateDevices=yes
 RestrictAddressFamilies=AF_INET AF_UNIX
-SystemCallFilter=~bpf process_vm_writev process_vm_readv perf_event_open kcmp lookup_dcookie move_pages swapon swapoff userfaultfd unshare
-SystemCallFilter=~@cpu-emulation @debug @module @obsolete @keyring @clock @raw-io @clock @swap @reboot
 LimitMEMLOCK=infinity
 LimitNOFILE=infinity
 LimitNPROC=infinity
@@ -51,6 +49,7 @@ ExecStartPre=-/usr/bin/podman rm -i -v -f mariadb
 ExecStop=/usr/bin/podman stop -t 12 mariadb
 ExecStopPost=-/usr/bin/podman rm -i -v -f mariadb
 ExecStart=/usr/bin/podman run --name mariadb \
+--security-opt seccomp=/etc/podman.seccomp/mariadb.json \
 --network host \
 --hostname mariadb  \
 --cap-drop all \
