@@ -4,7 +4,6 @@ local ID = require("ksuid").new()
 local json = require("json")
 local util = require("util")
 local logger = require("logger")
-local unpack = unpack
 local Notify_Toggle = {}
 local Notify = function()
 end
