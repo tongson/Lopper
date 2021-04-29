@@ -55,7 +55,7 @@ local start = function(name, unit, cpus, iid, ip)
 		changed = false,
 		to = iid,
 	})
-	if unit:find("__IP__", 1, true) then
+	if unit:contains("__IP__") then
 		unit, changed = unit:gsub("__IP__", ip)
 		panic((changed == 1), "unable to interpolate IP", {
 			what = "string.gsub",
