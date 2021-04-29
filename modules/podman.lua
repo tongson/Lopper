@@ -216,6 +216,7 @@ setmetatable(M, {
 			TAG = "Image tag.",
 			CPUS = "Argument to podman --cpuset-cpus.",
 			ARGS = "Arguments to any function hooks.",
+			IP = "Assigned IP for container",
 			always_update = "Boolean flag, if `true` always pull the image.",
 		}
 		M.param = {}
@@ -267,16 +268,15 @@ setmetatable(M, {
 				id = M.reg.id,
 			})
 		end
-		if instance.ip then
-			assign_ip(M.param.NAME, instance.ip)
-			local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), instance.ip)
+		if M.param.IP then
+			assign_ip(M.param.NAME, M.param.IP)
+			local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
 			panic(kx, "unable to add ip to etcdb", {
 				error = ky
 			})
 		end
-		M.reg.ip = instance.ip
 		-- start
-		start(M.param.NAME, M.reg.unit, M.param.CPUS, M.reg.id, M.reg.ip)
+		start(M.param.NAME, M.reg.unit, M.param.CPUS, M.reg.id, M.param.IP)
 		do
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
 			panic(kx, "unable to add service to etcdb", {
