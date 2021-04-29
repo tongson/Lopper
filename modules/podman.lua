@@ -103,10 +103,8 @@ local id = function(u, t)
 	_, u = util.path_split(u)
 	local name = ("%s:%s"):format(u, t)
 	for i = 1, #j do
-		for _, v in ipairs(j[i].Names) do
-			if v:find(name, 1, true) then
-				return j[i].Id
-			end
+		if table.find(j[i].Names, name) then
+			return j[i].Id
 		end
 	end
 	return nil, "Container image not found."
