@@ -19,7 +19,7 @@ After=network-online.target
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 RestartSec=5
-TimeoutStartSec=120
+TimeoutStartSec=infinity
 TimeoutStopSec=120
 Type=forking
 PIDFile=/run/podman-mariadb.pid
@@ -42,7 +42,7 @@ RestrictRealtime=yes
 #PrivateDevices=yes
 RestrictAddressFamilies=AF_INET AF_UNIX
 LimitMEMLOCK=infinity
-LimitNOFILE=infinity
+LimitNOFILE=65536
 LimitNPROC=infinity
 ExecStartPre=-/usr/bin/podman stop -i mariadb
 ExecStartPre=-/usr/bin/podman rm -i -v -f mariadb
@@ -60,10 +60,8 @@ ExecStart=/usr/bin/podman run --name mariadb \
 -e "MYSQL_ROOT_PASSWORD_FILE=/etc/mysql/secret/password" \
 -e "MALLOC_ARENA_MAX=2" \
 -e "TZ=UTC" \
---ulimit memlock=-1:-1 \
 --ulimit nofile=65536:65536 \
 --ulimit nproc=65536:65536 \
---memory 0 \
 --cpuset-cpus __CPUS__ \
 -v mariadb-data:/var/lib/mysql:rw \
 -v mariadb-secret:/etc/mysql/secret \
