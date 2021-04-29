@@ -208,16 +208,7 @@ ENV.CMD = function(exe)
 	return Cmd(exe)
 end
 ENV["get_if_addr"] = get_if_addr
-
-getmetatable("").__mod = function(a, b)
-	if not b then
-		return a
-	elseif type(b) == "table" then
-		return a:format(unpack(b))
-	else
-		return a:format(b)
-	end
-end
+util.format_operator()
 setfenv(3, ENV)
 return {
 	Exec = Exec,
