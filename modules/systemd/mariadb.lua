@@ -1,6 +1,5 @@
 return {
 ports = { "3306" },
-ip = "0.255.128.1",
 volumes = {
 	["mariadb-data"] = {
 		"chown -R 999:999 __MOUNTPOINT__",
