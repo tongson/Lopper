@@ -276,6 +276,15 @@ setmetatable(M, {
 			})
 		end
 		-- start
+		do
+			fs.mkdir("/etc/podman.seccomp")
+			local fn = ("/etc/podman.seccomp/%s.json"):format(M.param.NAME)
+			local default =  require("systemd.seccomp")
+			local seccomp = json.encode(default)
+			panic(fs.write(fn, seccomp), "unable to write seccomp profile", {
+				filename = fn,
+			})
+		end
 		start(M.param.NAME, M.reg.unit, M.param.CPUS, M.reg.id, M.param.IP)
 		do
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
