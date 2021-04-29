@@ -149,21 +149,11 @@ local assign_ip = function(n, ip)
 		stderr = se,
 	})
 	local check = json.decode(so)
-	local got 
-	for _, cc in ipairs(check) do
-		if table.find(cc, n) then
-			got = true
-			break
-		end
-	end
-	panic(got, "ifname did not match", {
+	panic(table.find(check, n), "ifname did not match", {
 		what = "dummy network",
 		expected = n,
 	})
-	if table.find(check, ip) then
-		got = true
-	end
-	panic(got, "local IP did not match", {
+	panic(table.find(check, ip), "local IP did not match", {
 		what = "dummy network",
 		expected = ip,
 	})
