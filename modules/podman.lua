@@ -39,35 +39,43 @@ local panic = function(ret, msg, tbl)
 end
 local M = {}
 local podman = exec.ctx("podman")
-local start = function(name, unit, cpus, iid, ip)
+local start = function(A)
 	local systemctl = exec.ctx("systemctl")
 	systemctl({
 		"disable",
 		"--no-block",
 		"--now",
-		("%s.service"):format(name),
+		("%s.service"):format(A.param.NAME),
 	})
-	local fname = ("/etc/systemd/system/%s.service"):format(name)
-	local changed
-	unit, changed = unit:gsub("__ID__", iid)
+	local fname = ("/etc/systemd/system/%s.service"):format(A.param.NAME)
+	local unit, changed = M.reg.UNIT:gsub("__ID__", A.reg.ID)
+	-- Should only match once.
 	panic((changed == 1), "unable to interpolate image ID", {
 		what = "string.gsub",
 		changed = false,
-		to = iid,
+		to = A.reg.ID,
 	})
 	if unit:contains("__IP__") then
-		unit, changed = unit:gsub("__IP__", ip)
+		unit, changed = unit:gsub("__IP__", A.param.IP)
 		panic((changed>=1), "unable to interpolate IP", {
 			what = "string.gsub",
 			changed = false,
-			to = ip,
+			to = A.param.IP,
 		})
 	end
-	unit, changed = unit:gsub("__CPUS__", cpus)
+	unit, changed = unit:gsub("__CPUS__", M.param.CPUS)
+	-- Should only match once.
 	panic((changed == 1), "unable to interpolate cpuset-cpus", {
 		what = "string.gsub",
 		changed = false,
-		to = cpus,
+		to = M.param.CPUS,
+	})
+	unit, changed = unit:gsub("__MEM__", M.param.MEM)
+	-- Should only match once.
+	panic((changed == 1), "unable to interpolate memory", {
+		what = "string.gsub",
+		changed = false,
+		to = M.param.MEM,
 	})
 	panic(fs.write(fname, unit), "unable to write unit", {
 		what = "fs.write",
@@ -77,12 +85,12 @@ local start = function(name, unit, cpus, iid, ip)
 		"enable",
 		"--no-block",
 		"--now",
-		("%s.service"):format(name),
+		("%s.service"):format(M.param.NAME),
 	})
 	panic(r, "unable to start service", {
 		what = "systemctl",
 		command = "enable",
-		service = name,
+		service = M.param.NAME,
 		stdout = so,
 		stderr = se,
 	})
@@ -218,13 +226,14 @@ setmetatable(M, {
 			NAME = "Unit name.",
 			URL = "Image URL.",
 			TAG = "Image tag.",
-			CPUS = "Argument to podman --cpuset-cpus.",
+			CPUS = "Pin container to CPU(s). Argument to podman --cpuset-cpus.",
+			MEM = "Memory limit. Argument to podman --memory.",
 			ARGS = "Arguments to any function hooks.",
 			IP = "Assigned IP for container",
 			always_update = "Boolean flag, if `true` always pull the image.",
 		}
-		M.param = {}
-		M.reg = {}
+		M.param = {} --> from user
+		M.reg = {} --> generated
 		for k in pairs(p) do
 			if not param[k] then
 				panic(nil, "Invalid parameter given.", {
@@ -234,30 +243,35 @@ setmetatable(M, {
 				M.param[k] = p[k]
 			end
 		end
+		M.param.MEM = M.param.MEM or "512m"
+		M.param.ARGS = M.param.ARGS or {}
+		M.param.CPUS = M.param.CPUS or "1"
+		M.param.IP = M.param.IP or "127.0.0.1"
 
 		local systemd = require("systemd." .. M.param.NAME)
-		local instance
-		M.param.ARGS = M.param.ARGS or {}
-		if next(M.param.ARGS) then
-			instance = systemd(M.param.ARGS)
-		else
-			instance = systemd
-		end
-		if next(instance.volumes) then
-			volume(instance.volumes)
-			for vn in pairs(instance.volumes) do
-				ok("Checked volume", {
-					name = vn,
+		do
+			local instance
+			if next(M.param.ARGS) then
+				instance = systemd(M.param.ARGS)
+			else
+				instance = systemd
+			end
+			if next(instance.volumes) then
+				volume(instance.volumes)
+				for vn in pairs(instance.volumes) do
+					ok("Checked volume", {
+						name = vn,
+					})
+				end
+			end
+			if instance.ports and next(instance.ports) then
+				local kx, ky = kv_service:put(schema.service_ports:format(M.param.NAME), json.encode(instance.ports))
+				panic(kx, "unable to add ports to etcdb", {
+					error = ky
 				})
 			end
+			M.reg.unit = instance.unit
 		end
-		if instance.ports and next(instance.ports) then
-			local kx, ky = kv_service:put(schema.service_ports:format(M.param.NAME), json.encode(instance.ports))
-			panic(kx, "unable to add ports to etcdb", {
-				error = ky
-			})
-		end
-		M.reg.unit = instance.unit
 
 		-- pull
 		M.reg.id = id(M.param.URL, M.param.TAG)
@@ -289,7 +303,7 @@ setmetatable(M, {
 				filename = fn,
 			})
 		end
-		start(M.param.NAME, M.reg.unit, M.param.CPUS, M.reg.id, M.param.IP)
+		start(M)
 		do
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
 			panic(kx, "unable to add service to etcdb", {
