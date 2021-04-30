@@ -99,8 +99,10 @@ local update_hosts = function()
 	local dns_config = get_volume("sys_dns-config")
 	local hosts = {}
 	for _, srv in ipairs(running) do
-		local ip = kv_service:get(schema.service_ip:format(srv))
-		hosts[#hosts+1] = ("%s %s"):format(ip, srv)
+		if srv ~= "sys_dns" then
+			local ip = kv_service:get(schema.service_ip:format(srv))
+			hosts[#hosts+1] = ("%s %s"):format(ip, srv)
+		end
 	end
 	hosts[#hosts+1] = ""
 	local hosts_file = table.concat(hosts, "\n")
