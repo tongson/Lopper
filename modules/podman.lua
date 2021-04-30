@@ -291,6 +291,7 @@ setmetatable(M, {
 			MEM = "Memory limit. Argument to podman --memory.",
 			ARGS = "Arguments to any function hooks.",
 			IP = "Assigned IP for container",
+			SHARES = "CPU share. Argument to podman --cpu-shares.",
 			always_update = "Boolean flag, if `true` always pull the image.",
 		}
 		M.param = {} --> from user
