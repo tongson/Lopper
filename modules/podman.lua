@@ -39,6 +39,24 @@ local panic = function(ret, msg, tbl)
 end
 local M = {}
 local podman = exec.ctx("podman")
+M.get_running = function()
+	local r, so, se = podman({"ps", "-a", "--format", "json"})
+	panic(r, "failure running podman command", {
+		command = "ps",
+		stdout = so,
+		stderr = se,
+	})
+	local ret = json.decode(so)
+	local names = {}
+	for _, c in ipairs(ret) do
+		if c["State"] == "running" then
+			for _, n in ipairs(c["Names"]) do
+				names[#names+1] = n
+			end
+		end
+	end
+	return names
+end
 M.stop = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
@@ -200,24 +218,6 @@ local assign_ip = function(n, ip)
 		expected = ip,
 	})
 	return ip
-end
-local get_running = function()
-	local r, so, se = podman({"ps", "-a", "--format", "json"})
-	panic(r, "failure running podman command", {
-		command = "ps",
-		stdout = so,
-		stderr = se,
-	})
-	local ret = json.decode(so)
-	local names = {}
-	for _, c in ipairs(ret) do
-		if c["State"] == "running" then
-			for _, n in ipairs(c["Names"]) do
-				names[#names+1] = n
-			end
-		end
-	end
-	return names
 end
 local get_volume = function(n)
 	local ret, so, se = podman({
