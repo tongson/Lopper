@@ -25,10 +25,8 @@ After=network-online.target
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 RestartSec=5
-Type=forking
-PIDFile=/run/podman-traefik.pid
-TimeoutStartSec=infinity
-TimeoutStopSec=20
+Type=notify
+NotifyAccess=all
 SystemCallArchitectures=native
 MemoryDenyWriteExecute=yes
 LockPersonality=yes
@@ -47,21 +45,15 @@ RestrictSUIDSGID=yes
 ProtectKernelTunables=yes
 #PrivateDevices=yes
 RestrictAddressFamilies=AF_INET
-SystemCallFilter=~bpf process_vm_writev process_vm_readv perf_event_open kcmp lookup_dcookie move_pages swapon swapoff userfaultfd unshare
-SystemCallFilter=~@cpu-emulation @debug @module @obsolete @keyring @clock @raw-io @clock @swap @reboot
-ExecStartPre=-/usr/bin/podman stop -i traefik
-ExecStartPre=-/usr/bin/podman rm -i -v -f traefik
-ExecStop=/usr/bin/podman stop -t 12 traefik
-ExecStopPost=-/usr/bin/podman rm -i -v -f traefik
 ExecStart=/usr/bin/podman run --name traefik \
 --security-opt seccomp=/etc/podman.seccomp/traefik.json \
 --network host \
 --replace \
 --rm \
+--sdnotify conmon \
 --hostname traefik  \
 --cap-drop all \
 --cap-add net_bind_service \
---conmon-pidfile=/run/podman-traefik.pid \
 -e "TZ=UTC" \
 --cpu-shares __SHARES \
 --cpuset-cpus __CPUS__ \
