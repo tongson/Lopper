@@ -47,6 +47,7 @@ ProtectKernelTunables=yes
 RestrictAddressFamilies=AF_INET
 ExecStart=/usr/bin/podman run --name traefik \
 --security-opt seccomp=/etc/podman.seccomp/traefik.json \
+--dns 127.255.255.53 \
 --network host \
 --replace \
 --rm \

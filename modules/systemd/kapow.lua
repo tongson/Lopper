@@ -42,6 +42,7 @@ ExecStart=/usr/bin/podman run --name kapow \
 --security-opt seccomp=/etc/podman.seccomp/kapow.json \
 --rm \
 --replace \
+--dns 127.255.255.53 \
 --network host \
 --hostname kapow  \
 --cap-drop all \
