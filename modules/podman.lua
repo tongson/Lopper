@@ -48,12 +48,12 @@ local start = function(A)
 		("%s.service"):format(A.param.NAME),
 	})
 	local fname = ("/etc/systemd/system/%s.service"):format(A.param.NAME)
-	local unit, changed = M.reg.UNIT:gsub("__ID__", A.reg.ID)
+	local unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
 	-- Should only match once.
 	panic((changed == 1), "unable to interpolate image ID", {
 		what = "string.gsub",
 		changed = false,
-		to = A.reg.ID,
+		to = A.reg.id,
 	})
 	if unit:contains("__IP__") then
 		unit, changed = unit:gsub("__IP__", A.param.IP)
@@ -63,19 +63,19 @@ local start = function(A)
 			to = A.param.IP,
 		})
 	end
-	unit, changed = unit:gsub("__CPUS__", M.param.CPUS)
+	unit, changed = unit:gsub("__CPUS__", A.param.CPUS)
 	-- Should only match once.
 	panic((changed == 1), "unable to interpolate cpuset-cpus", {
 		what = "string.gsub",
 		changed = false,
-		to = M.param.CPUS,
+		to = A.param.CPUS,
 	})
-	unit, changed = unit:gsub("__MEM__", M.param.MEM)
+	unit, changed = unit:gsub("__MEM__", A.param.MEM)
 	-- Should only match once.
 	panic((changed == 1), "unable to interpolate memory", {
 		what = "string.gsub",
 		changed = false,
-		to = M.param.MEM,
+		to = A.param.MEM,
 	})
 	panic(fs.write(fname, unit), "unable to write unit", {
 		what = "fs.write",
@@ -85,12 +85,12 @@ local start = function(A)
 		"enable",
 		"--no-block",
 		"--now",
-		("%s.service"):format(M.param.NAME),
+		("%s.service"):format(A.param.NAME),
 	})
 	panic(r, "unable to start service", {
 		what = "systemctl",
 		command = "enable",
-		service = M.param.NAME,
+		service = A.param.NAME,
 		stdout = so,
 		stderr = se,
 	})
