@@ -55,6 +55,7 @@ ExecStop=/usr/bin/podman stop -t 12 traefik
 ExecStopPost=-/usr/bin/podman rm -i -v -f traefik
 ExecStart=/usr/bin/podman run --name traefik \
 --network host \
+--replace \
 --hostname traefik  \
 --cap-drop all \
 --cap-add net_bind_service \
