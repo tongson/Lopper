@@ -100,6 +100,13 @@ local start = function(A)
 		changed = false,
 		to = A.param.MEM,
 	})
+	unit, changed = unit:gsub("__SHARES__", A.param.SHARES)
+	-- Should only match once.
+	panic((changed == 1), "unable to interpolate cpu-shares", {
+		what = "string.gsub",
+		changed = false,
+		to = A.param.SHARES,
+	})
 	panic(fs.write(fname, unit), "unable to write unit", {
 		what = "fs.write",
 		file = fname,
@@ -294,6 +301,7 @@ setmetatable(M, {
 		M.param.ARGS = M.param.ARGS or {}
 		M.param.CPUS = M.param.CPUS or "1"
 		M.param.IP = M.param.IP or "127.0.0.1"
+		M.param.SHARES = M.param.SHARES or "1024"
 
 		local systemd = require("systemd." .. M.param.NAME)
 		do
