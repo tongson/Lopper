@@ -66,6 +66,7 @@ ExecStopPost=-/usr/bin/podman rm -i -v -f sys_dns
 ExecStart=/usr/bin/podman run --name sys_dns \
 --security-opt seccomp=/etc/podman.seccomp/sys_dns.json \
 --replace \
+--rm \
 --network host \
 --hostname sys_dns  \
 --cap-drop all \
@@ -73,6 +74,7 @@ ExecStart=/usr/bin/podman run --name sys_dns \
 --conmon-pidfile=/run/podman-sys_dns.pid \
 -e "TZ=UTC" \
 --volume sys_dns-config:/config \
+--cpu-shares __SHARES__ \
 --cpuset-cpus __CPUS__ \
 --memory __MEM__ \
 __ID__

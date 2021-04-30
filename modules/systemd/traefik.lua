@@ -57,12 +57,15 @@ ExecStart=/usr/bin/podman run --name traefik \
 --security-opt seccomp=/etc/podman.seccomp/traefik.json \
 --network host \
 --replace \
+--rm \
 --hostname traefik  \
 --cap-drop all \
 --cap-add net_bind_service \
 --conmon-pidfile=/run/podman-traefik.pid \
 -e "TZ=UTC" \
+--cpu-shares __SHARES \
 --cpuset-cpus __CPUS__ \
+--memory __MEM__ \
 -v traefik-config:/config \
 -v traefik-logs:/logs __ID__
 

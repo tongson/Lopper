@@ -51,6 +51,7 @@ ExecStopPost=-/usr/bin/podman rm -i -v -f mariadb
 ExecStart=/usr/bin/podman run --name mariadb \
 --security-opt seccomp=/etc/podman.seccomp/mariadb.json \
 --rm \
+--replace \
 --network host \
 --hostname mariadb  \
 --dns 127.255.255.53 \
