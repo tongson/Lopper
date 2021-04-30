@@ -75,10 +75,17 @@ M.stop = function(c)
 		stdout = so,
 		stderr = se,
 	})
-        panic(kv_running:delete(c), "unable to remove container from etcdb/running", {
+	if kv_running:has(c) then
+		local try = util.retry_f(kv_running.delete)
+		local deleted = try(kv_running, c)
+		kv_running:close()
+		panic(deleted, "unable to remove container from etcdb/running", {
+			name = c,
+		})
+	end
+	ok("Stopped container(service).", {
 		name = c,
 	})
-	kv_running:close()
 end
 local start = function(A)
 	local systemctl = exec.ctx("systemctl")
