@@ -64,6 +64,7 @@ ExecStart=/usr/bin/podman run --name mariadb \
 -e "TZ=UTC" \
 --ulimit nofile=65536:65536 \
 --ulimit nproc=65536:65536 \
+--cpu-shares __SHARES__ \
 --cpuset-cpus __CPUS__ \
 --memory __MEM__ \
 -v mariadb-data:/var/lib/mysql:rw \
