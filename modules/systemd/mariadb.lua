@@ -52,6 +52,7 @@ ExecStart=/usr/bin/podman run --name mariadb \
 --security-opt seccomp=/etc/podman.seccomp/mariadb.json \
 --network host \
 --hostname mariadb  \
+--dns 127.255.255.53 \
 --cap-drop all \
 --cap-add setgid \
 --cap-add setuid \
@@ -63,6 +64,7 @@ ExecStart=/usr/bin/podman run --name mariadb \
 --ulimit nofile=65536:65536 \
 --ulimit nproc=65536:65536 \
 --cpuset-cpus __CPUS__ \
+--memory __MEM__ \
 -v mariadb-data:/var/lib/mysql:rw \
 -v mariadb-secret:/etc/mysql/secret \
 __ID__ --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci --wait_timeout=28800 --log-warnings=0 --bind-address=__IP__ --port=3306
