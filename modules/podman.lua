@@ -140,20 +140,24 @@ local assign_ip = function(n, ip)
 		})
 	local systemctl = exec.ctx("systemctl")
 	systemctl({"restart", "systemd-networkd"})
-	local ipargs = {"-j", "addr", "show", "dev", n}
-	local ipcmd = util.retry_f(exec.ctx("ip"))
-	local ret, so, se = ipcmd(ipargs)
-	panic(ret, "failure running ip command", {
-		what = "dummy network",
-		stdout = so,
-		stderr = se,
-	})
-	local check = json.decode(so)
-	panic(table.find(check, n), "ifname did not match", {
+	local netcheck = function(wh)
+		local ipargs = {"-j", "addr", "show", "dev", n}
+		local ipcmd = util.retry_f(exec.ctx("ip"))
+		local ret, so, se = ipcmd(ipargs)
+		panic(ret, "failure running ip command", {
+			what = "dummy network",
+			stdout = so,
+			stderr = se,
+		})
+		return table.find(json.decode(so), wh)
+	end
+	local ifcheck = util.retry_f(netcheck)
+	panic(ifcheck(n), "ifname did not match", {
 		what = "dummy network",
 		expected = n,
 	})
-	panic(table.find(check, ip), "local IP did not match", {
+	local ipcheck = util.retry_f(netcheck)
+	panic(ipcheck(ip), "local IP did not match", {
 		what = "dummy network",
 		expected = ip,
 	})
