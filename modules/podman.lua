@@ -39,6 +39,28 @@ local panic = function(ret, msg, tbl)
 end
 local M = {}
 local podman = exec.ctx("podman")
+M.stop = function(c)
+	local systemctl = exec.ctx("systemctl")
+	local so, se
+	systemctl("disable", "--no-block", "--now", c)
+	local is_inactive = function()
+		_, so, se = systemctl("status", c)
+		if so:contains("inactive") then
+			return true
+		else
+			return nil, so, se
+		end
+	end
+	local cmd = util.retry_f(is_inactive)
+	panic(cmd(), "failed stopping container", {
+		name = c,
+		stdout = so,
+		stderr = se,
+	})
+        panic(kv_running:delete(c), "unable to remove container from etcdb/running", {
+		name = c,
+	})
+end
 local start = function(A)
 	local systemctl = exec.ctx("systemctl")
 	systemctl({
@@ -335,7 +357,7 @@ setmetatable(M, {
 			})
 		end
 		if M.param.NAME ~= "sys_dns" then
-			local running = get_running()
+			local running = kv_running:keys()
 			local dns_config = get_volume("sys_dns-config")
 			local hosts = {}
 			for _, srv in ipairs(running) do
