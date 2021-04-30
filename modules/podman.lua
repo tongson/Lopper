@@ -381,6 +381,7 @@ setmetatable(M, {
 				local ip = kv_service:get(schema.service_ip:format(srv))
 				hosts[#hosts+1] = ("%s %s"):format(ip, srv)
 			end
+			hosts[#hosts+1] = ""
 			local hosts_file = table.concat(hosts, "\n")
 			panic(fs.write(dns_config .. "/hosts", hosts_file), "unable to write system HOSTS file", {})
 		end
