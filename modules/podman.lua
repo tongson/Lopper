@@ -108,7 +108,10 @@ local update_hosts = function()
 	local hosts_file = table.concat(hosts, "\n")
 	panic(fs.write(dns_config .. "/hosts", hosts_file), "unable to write system HOSTS file", {})
 end
-M.get_running = function()
+M.get_running = function(direct)
+	if not direct then
+		return kv_running:keys()
+	end
 	-- Not from the etcdb but directly from podman
 	local r, so, se = podman({"ps", "-a", "--format", "json"})
 	panic(r, "failure running podman command", {
