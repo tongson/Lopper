@@ -42,9 +42,9 @@ local podman = exec.ctx("podman")
 M.stop = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
-	systemctl("disable", "--no-block", "--now", c)
+	systemctl({"disable", "--no-block", "--now", c})
 	local is_inactive = function()
-		_, so, se = systemctl("status", c)
+		_, so, se = systemctl({"status", c})
 		if so:contains("inactive") then
 			return true
 		else
@@ -60,6 +60,7 @@ M.stop = function(c)
         panic(kv_running:delete(c), "unable to remove container from etcdb/running", {
 		name = c,
 	})
+	kv_running:close()
 end
 local start = function(A)
 	local systemctl = exec.ctx("systemctl")
