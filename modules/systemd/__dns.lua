@@ -23,13 +23,13 @@ local crypto = require("crypto")
 Corefile = crypto.base64_encode(Corefile)
 return {
 	volumes = {
-		["coredns-config"] = {
+		["__dns-config"] = {
 			([[printf "%s" | base64 --decode > __MOUNTPOINT__/Corefile]]):format(Corefile),
 		}
 	},
 unit = [==[
 [Unit]
-Description=coredns Container
+Description=__dns Container
 Wants=network.target
 After=network-online.target
 
@@ -40,7 +40,7 @@ RestartSec=5
 TimeoutStartSec=infinity
 TimeoutStopSec=120
 Type=forking
-PIDFile=/run/podman-coredns.pid
+PIDFile=/run/podman-__dns.pid
 SystemCallArchitectures=native
 MemoryDenyWriteExecute=yes
 LockPersonality=yes
@@ -59,20 +59,20 @@ RestrictSUIDSGID=yes
 ProtectKernelTunables=yes
 #PrivateDevices=yes
 RestrictAddressFamilies=AF_INET
-ExecStartPre=-/usr/bin/podman stop -i coredns
-ExecStartPre=-/usr/bin/podman rm -i -v -f coredns
-ExecStop=/usr/bin/podman stop -t 12 coredns
-ExecStopPost=-/usr/bin/podman rm -i -v -f coredns
-ExecStart=/usr/bin/podman run --name coredns \
---security-opt seccomp=/etc/podman.seccomp/coredns.json \
+ExecStartPre=-/usr/bin/podman stop -i __dns
+ExecStartPre=-/usr/bin/podman rm -i -v -f __dns
+ExecStop=/usr/bin/podman stop -t 12 __dns
+ExecStopPost=-/usr/bin/podman rm -i -v -f __dns
+ExecStart=/usr/bin/podman run --name __dns \
+--security-opt seccomp=/etc/podman.seccomp/__dns.json \
 --replace \
 --network host \
---hostname coredns  \
+--hostname __dns  \
 --cap-drop all \
 --cap-add net_bind_service \
---conmon-pidfile=/run/podman-coredns.pid \
+--conmon-pidfile=/run/podman-__dns.pid \
 -e "TZ=UTC" \
---volume coredns-config:/config \
+--volume __dns-config:/config \
 --cpuset-cpus __CPUS__ \
 --memory __MEM__ \
 __ID__
