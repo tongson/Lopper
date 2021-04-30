@@ -18,10 +18,8 @@ After=network-online.target
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 RestartSec=5
-TimeoutStartSec=infinity
-TimeoutStopSec=120
-Type=forking
-PIDFile=/run/podman-kapow.pid
+Type=notify
+NotifyAccess=all
 SystemCallArchitectures=native
 MemoryDenyWriteExecute=yes
 LockPersonality=yes
@@ -40,10 +38,6 @@ RestrictSUIDSGID=yes
 ProtectKernelTunables=yes
 #PrivateDevices=yes
 RestrictAddressFamilies=AF_INET
-ExecStartPre=-/usr/bin/podman stop -i kapow
-ExecStartPre=-/usr/bin/podman rm -i -v -f kapow
-ExecStop=/usr/bin/podman stop -t 12 kapow
-ExecStopPost=-/usr/bin/podman rm -i -v -f kapow
 ExecStart=/usr/bin/podman run --name kapow \
 --security-opt seccomp=/etc/podman.seccomp/kapow.json \
 --rm \
@@ -51,6 +45,7 @@ ExecStart=/usr/bin/podman run --name kapow \
 --network host \
 --hostname kapow  \
 --cap-drop all \
+--sdnotify conmon \
 --conmon-pidfile=/run/podman-kapow.pid \
 -e "TZ=UTC" \
 --volume kapow-src:/src \
