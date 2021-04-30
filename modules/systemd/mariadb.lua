@@ -54,7 +54,6 @@ ExecStart=/usr/bin/podman run --name mariadb \
 --cap-add setgid \
 --cap-add setuid \
 --cap-add dac_read_search \
---conmon-pidfile=/run/podman-mariadb.pid \
 -e "MYSQL_ROOT_PASSWORD_FILE=/etc/mysql/secret/password" \
 -e "MALLOC_ARENA_MAX=2" \
 -e "TZ=UTC" \

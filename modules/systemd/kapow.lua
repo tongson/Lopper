@@ -46,7 +46,6 @@ ExecStart=/usr/bin/podman run --name kapow \
 --hostname kapow  \
 --cap-drop all \
 --sdnotify conmon \
---conmon-pidfile=/run/podman-kapow.pid \
 -e "TZ=UTC" \
 --volume kapow-src:/src \
 --cpu-shares __SHARES \
