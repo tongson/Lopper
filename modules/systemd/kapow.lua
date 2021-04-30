@@ -40,13 +40,12 @@ RestrictSUIDSGID=yes
 ProtectKernelTunables=yes
 #PrivateDevices=yes
 RestrictAddressFamilies=AF_INET
-SystemCallFilter=~bpf process_vm_writev process_vm_readv perf_event_open kcmp lookup_dcookie move_pages swapon swapoff userfaultfd unshare
-SystemCallFilter=~@cpu-emulation @debug @module @obsolete @keyring @clock @raw-io @clock @swap @reboot
 ExecStartPre=-/usr/bin/podman stop -i kapow
 ExecStartPre=-/usr/bin/podman rm -i -v -f kapow
 ExecStop=/usr/bin/podman stop -t 12 kapow
 ExecStopPost=-/usr/bin/podman rm -i -v -f kapow
 ExecStart=/usr/bin/podman run --name kapow \
+--security-opt seccomp=/etc/podman.seccomp/kapow.json \
 --network host \
 --hostname kapow  \
 --cap-drop all \
