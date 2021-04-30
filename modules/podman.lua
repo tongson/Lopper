@@ -336,14 +336,14 @@ setmetatable(M, {
 		end
 		if M.param.NAME ~= "sys_dns" then
 			local running = get_running()
-			local dns_config = get_volume("sys_dns")
+			local dns_config = get_volume("sys_dns-config")
 			local hosts = {}
 			for _, srv in ipairs(running) do
 				local ip = kv_service:get(schema.service_ip:format(srv))
 				hosts[#hosts+1] = ("%s %s"):format(ip, srv)
 			end
 			local hosts_file = table.concat(hosts, "\n")
-			panic(fs.write(dns_config .. "/config/hosts", hosts_file), "unable to write system HOSTS file", {})
+			panic(fs.write(dns_config .. "/hosts", hosts_file), "unable to write system HOSTS file", {})
 		end
 		kv_running:close()
 		kv_service:close()
