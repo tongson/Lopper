@@ -203,13 +203,19 @@ local get_volume = function(n)
 	})
 	local j = json.decode(so)
 	local found = {}
-	for _, v in ipairs(j) do
-		if n and v.Name == n then
-			return v.Mountpoint
+	if n then
+		for _, v in ipairs(j) do
+			if v.Name == n then
+				return v.Mountpoint
+			end
 		end
-		found[v.Name] = v.Mountpoint
+		return nil
+	else
+		for _, v in ipairs(j) do
+			found[v.Name] = v.Mountpoint
+		end
+		return found
 	end
-	return found
 end
 local volume = function(vt)
 	local found = get_volume()
