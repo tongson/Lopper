@@ -171,30 +171,48 @@ local assign_ip = function(n, ip)
 	})
 	return ip
 end
-local volume = function(vt)
-	local volumes = function(n)
-		local ret, so, se = podman({
-			"volume",
-			"inspect",
-			"--all",
-		})
-		panic(ret, "Failure listing volumes", {
-			what = "podman",
-			command = "volume-ls",
-			stdout = so,
-			stderr = se,
-		})
-		local j = json.decode(so)
-		local found = {}
-		for _, v in ipairs(j) do
-			if n and v.Name == n then
-				return v.Mountpoint
+local get_running = function()
+	local r, so, se = podman({"ps", "-a", "--format", "json"})
+	panic(r, "failure running podman command", {
+		command = "ps",
+		stdout = so,
+		stderr = se,
+	})
+	local ret = json.decode(so)
+	local names = {}
+	for _, c in ipairs(ret) do
+		if c["State"] == "running" then
+			for _, n in ipairs(c["Names"]) do
+				names[#names+1] = n
 			end
-			found[v.Name] = v.Mountpoint
 		end
-		return found
 	end
-	local found = volumes()
+	return names
+end
+local get_volume = function(n)
+	local ret, so, se = podman({
+		"volume",
+		"inspect",
+		"--all",
+	})
+	panic(ret, "Failure listing volumes", {
+		what = "podman",
+		command = "volume-ls",
+		stdout = so,
+		stderr = se,
+	})
+	local j = json.decode(so)
+	local found = {}
+	for _, v in ipairs(j) do
+		if n and v.Name == n then
+			return v.Mountpoint
+		end
+		found[v.Name] = v.Mountpoint
+	end
+	return found
+end
+local volume = function(vt)
+	local found = get_volume()
 	for x, y in pairs(vt) do
 		if not found[x] then
 			local ret, so, se = podman({ "volume", "create", x })
@@ -205,7 +223,7 @@ local volume = function(vt)
 				stderr = se,
 			})
 		end
-		local mountpoint = volumes(x)
+		local mountpoint = get_volume(x)
 		local sh = exec.ctx("sh")
 		if type(y) == "table" then
 			for _, cmd in ipairs(y) do
@@ -309,6 +327,17 @@ setmetatable(M, {
 			panic(kx, "unable to add service to etcdb", {
 				error = ky
 			})
+		end
+		if M.param.NAME ~= "sys_dns" then
+			local running = get_running()
+			local dns_config = get_volume("sys_dns")
+			local hosts = {}
+			for _, srv in ipairs(running) do
+				local ip = kv_service:get(schema.service_ip:format(srv))
+				hosts[#hosts+1] = ("%s %s"):format(ip, srv)
+			end
+			local hosts_file = table.concat(hosts, "\n")
+			panic(fs.write(dns_config .. "/config/hosts", hosts_file), "unable to write system HOSTS file", {})
 		end
 		kv_running:close()
 		kv_service:close()
