@@ -51,7 +51,7 @@ M.stop = function(c)
 			return nil, so, se
 		end
 	end
-	local cmd = util.retry_f(is_inactive)
+	local cmd = util.retry_f(is_inactive, 10)
 	panic(cmd(), "failed stopping container", {
 		name = c,
 		stdout = so,
