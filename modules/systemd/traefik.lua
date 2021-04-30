@@ -54,6 +54,7 @@ ExecStartPre=-/usr/bin/podman rm -i -v -f traefik
 ExecStop=/usr/bin/podman stop -t 12 traefik
 ExecStopPost=-/usr/bin/podman rm -i -v -f traefik
 ExecStart=/usr/bin/podman run --name traefik \
+--security-opt seccomp=/etc/podman.seccomp/traefik.json \
 --network host \
 --replace \
 --hostname traefik  \
