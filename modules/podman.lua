@@ -109,6 +109,7 @@ local update_hosts = function()
 	panic(fs.write(dns_config .. "/hosts", hosts_file), "unable to write system HOSTS file", {})
 end
 M.get_running = function()
+	-- Not from the etcdb but directly from podman
 	local r, so, se = podman({"ps", "-a", "--format", "json"})
 	panic(r, "failure running podman command", {
 		command = "ps",
