@@ -24,7 +24,6 @@ return {
         "swapoff",
         "userfaultfd",
         "unshare",
-        "commit_creds",
         "kexec_file_load",
         "kexec_load",
         "reboot",
