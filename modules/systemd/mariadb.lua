@@ -19,10 +19,8 @@ After=network-online.target
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 RestartSec=5
-TimeoutStartSec=infinity
-TimeoutStopSec=120
-Type=forking
-PIDFile=/run/podman-mariadb.pid
+Type=notify
+NotifyAccess=all
 SystemCallArchitectures=native
 MemoryDenyWriteExecute=yes
 LockPersonality=yes
@@ -44,14 +42,11 @@ RestrictAddressFamilies=AF_INET AF_UNIX
 LimitMEMLOCK=infinity
 LimitNOFILE=65536
 LimitNPROC=infinity
-ExecStartPre=-/usr/bin/podman stop -i mariadb
-ExecStartPre=-/usr/bin/podman rm -i -v -f mariadb
-ExecStop=/usr/bin/podman stop -t 12 mariadb
-ExecStopPost=-/usr/bin/podman rm -i -v -f mariadb
 ExecStart=/usr/bin/podman run --name mariadb \
 --security-opt seccomp=/etc/podman.seccomp/mariadb.json \
 --rm \
 --replace \
+--sdnotify conmon \
 --network host \
 --hostname mariadb  \
 --dns 127.255.255.53 \
