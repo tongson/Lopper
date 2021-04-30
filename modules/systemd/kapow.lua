@@ -48,7 +48,7 @@ ExecStart=/usr/bin/podman run --name kapow \
 --sdnotify conmon \
 -e "TZ=UTC" \
 --volume kapow-src:/src \
---cpu-shares __SHARES \
+--cpu-shares __SHARES__ \
 --cpuset-cpus __CPUS__ \
 --memory __MEM__ \
 __ID__  --debug --control-reachable-addr '__IP__:60081' --bind __IP__:60080 --control-bind __IP__:60081 --data-bind __IP__:60082 /src/index.pow

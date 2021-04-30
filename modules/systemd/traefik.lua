@@ -55,7 +55,7 @@ ExecStart=/usr/bin/podman run --name traefik \
 --cap-drop all \
 --cap-add net_bind_service \
 -e "TZ=UTC" \
---cpu-shares __SHARES \
+--cpu-shares __SHARES__ \
 --cpuset-cpus __CPUS__ \
 --memory __MEM__ \
 -v traefik-config:/config \
