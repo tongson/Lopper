@@ -127,6 +127,11 @@ M.get_running = function()
 	end
 	return names
 end
+M.get_ports = function(srv)
+	-- From etcdb
+	local ports = kv_service:get(schema.service_ports:format(srv))
+	return json.decode(ports)
+end
 M.stop = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
