@@ -56,6 +56,7 @@ return {
         "umount",
         "umount2",
 	"fanotify_init",
+	"name_to_handle_at",
         "_sysctl",
         "afs_syscall",
         "bdflush",
