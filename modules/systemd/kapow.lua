@@ -37,7 +37,6 @@ ProtectClock=yes
 RestrictRealtime=yes
 RestrictSUIDSGID=yes
 ProtectKernelTunables=yes
-#PrivateDevices=yes
 RestrictAddressFamilies=AF_INET
 ExecStart=/usr/bin/podman run --name kapow \
 --security-opt seccomp=/etc/podman.seccomp/kapow.json \

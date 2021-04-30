@@ -44,7 +44,6 @@ ProtectClock=yes
 RestrictRealtime=yes
 RestrictSUIDSGID=yes
 ProtectKernelTunables=yes
-#PrivateDevices=yes
 RestrictAddressFamilies=AF_INET
 ExecStart=/usr/bin/podman run --name traefik \
 --security-opt seccomp=/etc/podman.seccomp/traefik.json \
