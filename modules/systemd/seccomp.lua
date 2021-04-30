@@ -55,6 +55,7 @@ return {
         "open_tree",
         "umount",
         "umount2",
+	"fanotify_init",
         "_sysctl",
         "afs_syscall",
         "bdflush",
