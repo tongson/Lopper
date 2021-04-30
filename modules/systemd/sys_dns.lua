@@ -37,10 +37,8 @@ After=network-online.target
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 RestartSec=5
-TimeoutStartSec=infinity
-TimeoutStopSec=120
-Type=forking
-PIDFile=/run/podman-sys_dns.pid
+Type=notify
+NotifyAccess=all
 SystemCallArchitectures=native
 MemoryDenyWriteExecute=yes
 LockPersonality=yes
@@ -59,10 +57,6 @@ RestrictSUIDSGID=yes
 ProtectKernelTunables=yes
 #PrivateDevices=yes
 RestrictAddressFamilies=AF_INET
-ExecStartPre=-/usr/bin/podman stop -i sys_dns
-ExecStartPre=-/usr/bin/podman rm -i -v -f sys_dns
-ExecStop=/usr/bin/podman stop -t 12 sys_dns
-ExecStopPost=-/usr/bin/podman rm -i -v -f sys_dns
 ExecStart=/usr/bin/podman run --name sys_dns \
 --security-opt seccomp=/etc/podman.seccomp/sys_dns.json \
 --replace \
@@ -71,7 +65,7 @@ ExecStart=/usr/bin/podman run --name sys_dns \
 --hostname sys_dns  \
 --cap-drop all \
 --cap-add net_bind_service \
---conmon-pidfile=/run/podman-sys_dns.pid \
+--sdnotify conmon \
 -e "TZ=UTC" \
 --volume sys_dns-config:/config \
 --cpu-shares __SHARES__ \
