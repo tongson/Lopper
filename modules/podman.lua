@@ -352,7 +352,7 @@ setmetatable(M, {
 		do
 			fs.mkdir("/etc/podman.seccomp")
 			local fn = ("/etc/podman.seccomp/%s.json"):format(M.param.NAME)
-			local default =  require("systemd.seccomp")
+			local default =  require("seccomp")
 			local seccomp = json.encode(default)
 			panic(fs.write(fn, seccomp), "unable to write seccomp profile", {
 				filename = fn,
