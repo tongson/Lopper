@@ -14,6 +14,7 @@ return {
         "vhangup",
         "ptrace",
         "bpf",
+	"process_madvise",
         "process_vm_writev",
         "process_vm_readv",
         "perf_event_open",
