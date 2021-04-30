@@ -46,6 +46,7 @@ ExecStop=/usr/bin/podman stop -t 12 kapow
 ExecStopPost=-/usr/bin/podman rm -i -v -f kapow
 ExecStart=/usr/bin/podman run --name kapow \
 --security-opt seccomp=/etc/podman.seccomp/kapow.json \
+--rm \
 --replace \
 --network host \
 --hostname kapow  \
