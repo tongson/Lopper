@@ -21,6 +21,7 @@ Restart=on-failure
 RestartSec=5
 Type=notify
 NotifyAccess=all
+KillMode=mixed
 SystemCallArchitectures=native
 MemoryDenyWriteExecute=yes
 LockPersonality=yes
