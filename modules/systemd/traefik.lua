@@ -15,57 +15,11 @@ return setmetatable({}, {
 				},
 				["traefik-logs"] = true,
 			})
-		rawset(t, "unit", [==[
-[Unit]
-Description=Traefik Container
-Wants=network.target
-After=network-online.target
-
-[Service]
-Environment=PODMAN_SYSTEMD_UNIT=%n
-Restart=on-failure
-RestartSec=5
-Type=notify
-NotifyAccess=all
-KillMode=mixed
-SystemCallArchitectures=native
-MemoryDenyWriteExecute=yes
-LockPersonality=yes
-NoNewPrivileges=yes
-RemoveIPC=yes
-DevicePolicy=closed
-PrivateTmp=yes
-PrivateNetwork=false
-ProtectKernelModules=yes
-ProtectSystem=full
-ProtectHome=yes
-ProtectKernelLogs=yes
-ProtectClock=yes
-RestrictRealtime=yes
-RestrictSUIDSGID=yes
-ProtectKernelTunables=yes
-RestrictAddressFamilies=AF_INET
-ExecStart=/usr/bin/podman run --name traefik \
---security-opt seccomp=/etc/podman.seccomp/traefik.json \
---security-opt apparmor=unconfined \
---dns 127.255.255.53 \
---network host \
---replace \
---rm \
---sdnotify conmon \
---hostname traefik  \
---cap-drop all \
---cap-add net_bind_service \
--e "TZ=UTC" \
---cpu-shares __SHARES__ \
---cpuset-cpus __CPUS__ \
---memory __MEM__ \
--v traefik-config:/config \
--v traefik-logs:/logs __ID__
-
-[Install]
-WantedBy=multi-user.target
-]==])
+		rawset(t, "capabilities", { "net_bind_service" })
+		rawset(t, "mounts", {
+			["traefik-config"] = "/config",
+			["traefik-logs"] = "/logs",
+		})
 		return t
 	end
 })
