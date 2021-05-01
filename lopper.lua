@@ -42,7 +42,7 @@ local Panic = function(msg, tbl)
 	Notify(msg, tbl)     --> notification on failure! Last cry before dying
 	os.exit(1)
 end
-local get_if_addr = function(interface, ver)
+local InterfaceAddr = function(interface, ver)
 	ver = ver or "inet"
 	local ip = exec.ctx("ip")
 	local ret, so, se = ip({"-j", "addr"})
@@ -206,7 +206,7 @@ ENV["Script"] = setmetatable({}, {
 ENV["Command"] = function(exe)
 	return Command(exe)
 end
-ENV["InterfaceAddr"] = get_if_addr
+ENV["InterfaceAddr"] = InterfaceAddr
 package.preload["lopper"] = function()
 	return {
 		Exec = Exec,
