@@ -487,6 +487,24 @@ setmetatable(M, {
 		end
 		start(M)
 		do
+			local systemctl = exec.ctx("systemctl")
+			local so, se
+			local is_active = function()
+				_, so, se = systemctl({ "is-active", M.param.NAME })
+				if so == "active\n" then
+					return true
+				else
+					return nil, so, se
+				end
+			end
+			local cmd = util.retry_f(is_active, 10)
+			panic(cmd(), "failed starting container", {
+				name = M.param.NAME,
+				stdout = so,
+				stderr = se,
+			})
+		end
+		do
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
 			panic(kx, "unable to add service to etcdb", {
 				error = ky,
