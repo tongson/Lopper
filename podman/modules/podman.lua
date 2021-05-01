@@ -33,6 +33,7 @@ RestrictAddressFamilies=__ADDRESS_FAMILIES__
 ExecStart=/usr/bin/podman run --name __NAME__ \
 --security-opt seccomp=/etc/podman.seccomp/__NAME__.json \
 --security-opt apparmor=unconfined \
+--security-opt label=disable \
 --rm \
 --replace \
 --dns 127.255.255.53 \
