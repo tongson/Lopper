@@ -170,7 +170,7 @@ setmetatable(ENV, {
 		return rawget(_G, value) or Panic("Unknown command or variable", { string = value })
 	end,
 })
-ENV.NOTIFY = setmetatable({}, {
+ENV.Notify = setmetatable({}, {
 	__call = function(_, msg, tbl)
 		return Notify_Function(msg, tbl, true)
 	end,
@@ -180,7 +180,7 @@ ENV.NOTIFY = setmetatable({}, {
 		Notify = Notify_Function
 	end,
 })
-ENV.SH = setmetatable({}, {
+ENV.Shell = setmetatable({}, {
 	__newindex = function(t, k, v)
 		rawset(t, k, v)    --> Use the metatable to store settings
 	end,
@@ -192,7 +192,7 @@ ENV.SH = setmetatable({}, {
 		})
 	end,
 })
-ENV.SCRIPT = setmetatable({}, {
+ENV.Script = setmetatable({}, {
 	__newindex = function(t, k, v)
 		rawset(t, k, v)    --> Use the metatable to store settings
 	end,
@@ -203,7 +203,7 @@ ENV.SCRIPT = setmetatable({}, {
 		})
 	end,
 })
-ENV.CMD = function(exe)
+ENV.Cmd = function(exe)
 	return Cmd(exe)
 end
 ENV["get_if_addr"] = get_if_addr
