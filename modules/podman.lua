@@ -232,7 +232,7 @@ local start = function(A)
 		changed = false,
 		to = A.param.NAME,
 	})
-	unit, changed = unit:gsub("__ADDRESS_FAMILIES__", A.param.ADDRESS_FAMILIES)
+	unit, changed = unit:gsub("__ADDRESS_FAMILIES__", A.reg.address_families)
 	-- Should only match once.
 	panic((changed == 1), "unable to interpolate RestrictAddressFamilies", {
 		what = "string.gsub",
@@ -383,8 +383,6 @@ setmetatable(M, {
 			ARGS = "(table) Arguments to any function hooks.",
 			IP = "Assigned IP for container",
 			SHARES = "CPU share. Argument to podman --cpu-shares.",
-			ADDRESS_FAMILIES = "Address families allowed. Value of systemd RestrictAddressFamilies. Default: AF_INET.",
-			CAPABILITIES = "(table) Linux capabilities, example: net_bind_service.",
 			ENVIRONMENT = "(table) Environment variables.",
 			CMD = "Command line to container.",
 			always_update = "Boolean flag, if `true` always pull the image.",
@@ -405,7 +403,6 @@ setmetatable(M, {
 		M.param.CPUS = M.param.CPUS or "1"
 		M.param.IP = M.param.IP or "127.0.0.1"
 		M.param.SHARES = M.param.SHARES or "1024"
-		M.param.ADDRESS_FAMILIES = M.param.ADDRESS_FAMILIES or "AF_INET"
 
 		local systemd = require("systemd." .. M.param.NAME)
 		do
@@ -432,13 +429,12 @@ setmetatable(M, {
 					error = ky,
 				})
 			end
+			M.reg.address_families = instance.address_families or "AF_INET"
 			if instance.unit then
 				M.reg.unit = instance.unit
 			else
-				if M.param.CAPABILITIES then
-					for _, c in ipairs(M.param.CAPABILITIES) do
-						systemd_unit[#systemd_unit + 1] = ([[--cap-add %s \]]):format(c)
-					end
+				for _, c in ipairs(instance.capabilities) do
+					systemd_unit[#systemd_unit + 1] = ([[--cap-add %s \]]):format(c)
 				end
 				if M.param.ENVIRONMENT then
 					for _, e in ipairs(M.param.ENVIRONMENT) do
@@ -448,6 +444,7 @@ setmetatable(M, {
 				for k, v in pairs(instance.mounts) do
 					systemd_unit[#systemd_unit + 1] = ([[--volume %s:%s \]]):format(k, v)
 				end
+				instance.cmd = instance.cmd or ""
 				M.param.CMD = M.param.CMD or instance.cmd
 				systemd_unit[#systemd_unit + 1] = ("__ID__ %s"):format(M.param.CMD)
 				systemd_unit[#systemd_unit + 1] = ""
