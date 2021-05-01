@@ -210,9 +210,9 @@ ENV["get_if_addr"] = get_if_addr
 util.format_operator()
 setfenv(3, ENV)
 return {
-	Exec = Exec,
-	Panic = Panic,
-	Ok = Ok,
-	Notify = Notify,
-	ID = ID,
+	exec = Exec,
+	panic = Panic,
+	ok = Ok,
+	notify = Notify,
+	id = ID,
 }
