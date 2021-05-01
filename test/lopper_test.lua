@@ -1,8 +1,8 @@
-require("lopper")
+#!/usr/bin/env lopper
 T = require("test")
 
-NOTIFY("start Lopper tests...")
-sh = CMD("sh")
+Notify("start Lopper tests...")
+sh = Command("sh")
 sh.cwd = "/tmp"
 sh("-c", "touch CMD")
 T["CMD"] = function()
@@ -10,8 +10,8 @@ T["CMD"] = function()
 	os.remove("/tmp/CMD")
 end
 
-SH.CWD = "/tmp"
-SH([[
+Shell.CWD = "/tmp"
+Shell([[
 set -efu
 touch "/tmp/SH"
 ]])
@@ -25,13 +25,13 @@ set -efu
 touch "/tmp/${VAR:-SCRIPT_OK}"
 ]]
 fs.write("/tmp/script.sh", script)
-SCRIPT.ENV = { "VAR=SCRIPT" }
-SCRIPT("/tmp/script.sh")
+Script.ENV = { "VAR=SCRIPT" }
+Script("/tmp/script.sh")
 T["SCRIPT #1"] = function()
 	T.is_true(fs.isfile("/tmp/SCRIPT"))
 	os.remove("/tmp/SCRIPT")
 end
-SCRIPT("/tmp/script.sh")
+Script("/tmp/script.sh")
 T["SCRIPT #2"] = function()
 	T.is_true(fs.isfile("/tmp/SCRIPT_OK"))
 	os.remove("/tmp/SCRIPT_OK")
@@ -41,8 +41,8 @@ set -efu
 echo "${NIL}"
 ]]
 fs.write("/tmp/script.sh", script)
-SCRIPT.IGNORE = true
-SCRIPT("/tmp/script.sh")
+Script.IGNORE = true
+Script("/tmp/script.sh")
 T["SCRIPT #3"] = function()
 	T.is_string("SHOULD EXECUTE THIS TEST")
 end
@@ -59,13 +59,13 @@ end
 
 dummy = require("lopper_dummy")
 T["environment does not cross"] = function()
-	T.is_nil(dummy.test())
+	T.is_function(dummy.test())
 end
 
 dummy = require("lopper_dummy")
 T["string metatable is global"] = function()
 	T.equal(dummy.interpolation(), "yes")
 end
-NOTIFY("end Lopper tests")
+Notify("end Lopper tests")
 
 T.summary()
