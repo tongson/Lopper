@@ -170,7 +170,7 @@ setmetatable(ENV, {
 		return rawget(_G, value) or Panic("Unknown command or variable", { string = value })
 	end,
 })
-ENV.Notify = setmetatable({}, {
+ENV["Notify"] = setmetatable({}, {
 	__call = function(_, msg, tbl)
 		return Notify_Function(msg, tbl, true)
 	end,
@@ -180,7 +180,7 @@ ENV.Notify = setmetatable({}, {
 		Notify = Notify_Function
 	end,
 })
-ENV.Shell = setmetatable({}, {
+ENV["Shell"] = setmetatable({}, {
 	__newindex = function(t, k, v)
 		rawset(t, k, v)    --> Use the metatable to store settings
 	end,
@@ -192,7 +192,7 @@ ENV.Shell = setmetatable({}, {
 		})
 	end,
 })
-ENV.Script = setmetatable({}, {
+ENV["Script"] = setmetatable({}, {
 	__newindex = function(t, k, v)
 		rawset(t, k, v)    --> Use the metatable to store settings
 	end,
@@ -203,16 +203,18 @@ ENV.Script = setmetatable({}, {
 		})
 	end,
 })
-ENV.Cmd = function(exe)
+ENV["Command"] = function(exe)
 	return Cmd(exe)
 end
-ENV["get_if_addr"] = get_if_addr
+ENV["InterfaceAddr"] = get_if_addr
+package.preload["lopper"] = function()
+	return {
+		Exec = Exec,
+		Panic = Panic,
+		Ok = Ok,
+		Notify = Notify,
+		ID = ID,
+	}
+end
 util.format_operator()
-setfenv(3, ENV)
-return {
-	exec = Exec,
-	panic = Panic,
-	ok = Ok,
-	notify = Notify,
-	id = ID,
-}
+setfenv(0, ENV)
