@@ -135,7 +135,7 @@ local Exec = function(exe, t)  --> Second argument is the metatable
 	})
 end
 
-local Cmd = function(exe)
+local Command = function(exe)
 	local set = {}
 	return setmetatable(set, {
 		__call = function(_, ...)
@@ -204,7 +204,7 @@ ENV["Script"] = setmetatable({}, {
 	end,
 })
 ENV["Command"] = function(exe)
-	return Cmd(exe)
+	return Command(exe)
 end
 ENV["InterfaceAddr"] = get_if_addr
 package.preload["lopper"] = function()
