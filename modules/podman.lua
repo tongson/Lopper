@@ -468,15 +468,14 @@ setmetatable(M, {
 				id = M.reg.id,
 			})
 		end
-		if M.param.IP then
+		if M.param.IP then --> Generate systemd-networkd config and record IP into etcdb
 			assign_ip(M.param.NAME, M.param.IP)
 			local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
 			panic(kx, "unable to add ip to etcdb", {
 				error = ky,
 			})
 		end
-		-- start
-		do
+		do --> Generate seccomp profile
 			fs.mkdir("/etc/podman.seccomp")
 			local fn = ("/etc/podman.seccomp/%s.json"):format(M.param.NAME)
 			local default = require("seccomp")
@@ -486,7 +485,7 @@ setmetatable(M, {
 			})
 		end
 		start(M)
-		do
+		do --> Check if really up
 			local systemctl = exec.ctx("systemctl")
 			local so, se
 			local is_active = function()
@@ -504,7 +503,7 @@ setmetatable(M, {
 				stderr = se,
 			})
 		end
-		do
+		do --> Record into etcdb
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
 			panic(kx, "unable to add service to etcdb", {
 				error = ky,
