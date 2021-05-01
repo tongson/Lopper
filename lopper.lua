@@ -209,7 +209,6 @@ end
 ENV["InterfaceAddr"] = InterfaceAddr
 package.preload["lopper"] = function()
 	return {
-		Exec = Exec,
 		Panic = Panic,
 		Ok = Ok,
 		Notify = Notify,
