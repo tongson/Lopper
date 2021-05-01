@@ -40,6 +40,7 @@ ProtectKernelTunables=yes
 RestrictAddressFamilies=AF_INET
 ExecStart=/usr/bin/podman run --name kapow \
 --security-opt seccomp=/etc/podman.seccomp/kapow.json \
+--security-opt apparmor=unconfined \
 --rm \
 --replace \
 --dns 127.255.255.53 \

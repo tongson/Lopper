@@ -43,6 +43,7 @@ LimitMEMLOCK=infinity
 LimitNOFILE=65536
 LimitNPROC=infinity
 ExecStart=/usr/bin/podman run --name mariadb \
+--security-opt apparmor=unconfined \
 --security-opt seccomp=/etc/podman.seccomp/mariadb.json \
 --rm \
 --replace \

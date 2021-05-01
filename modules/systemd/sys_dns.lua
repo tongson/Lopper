@@ -59,6 +59,7 @@ ProtectKernelTunables=yes
 RestrictAddressFamilies=AF_INET
 ExecStart=/usr/bin/podman run --name sys_dns \
 --security-opt seccomp=/etc/podman.seccomp/sys_dns.json \
+--security-opt apparmor=unconfined \
 --replace \
 --rm \
 --network host \
