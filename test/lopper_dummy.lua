@@ -1,6 +1,6 @@
 return {
 	test = function()
-		return CMD
+		return Command
 	end,
 	interpolation = function()
 		return "%s" % "yes"
