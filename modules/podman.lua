@@ -1,4 +1,50 @@
 local DSL = "podman"
+local systemd_unit = {
+	[===[
+[Unit]
+Description=__NAME__ Container
+Wants=network.target
+After=network-online.target
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Restart=on-failure
+RestartSec=5
+Type=notify
+NotifyAccess=all
+KillMode=mixed
+SystemCallArchitectures=native
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+NoNewPrivileges=yes
+RemoveIPC=yes
+DevicePolicy=closed
+PrivateTmp=yes
+PrivateNetwork=false
+ProtectKernelModules=yes
+ProtectSystem=full
+ProtectHome=yes
+ProtectKernelLogs=yes
+ProtectClock=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+ProtectKernelTunables=yes
+RestrictAddressFamilies=__ADDRESS_FAMILIES__
+ExecStart=/usr/bin/podman run --name __NAME__ \
+--security-opt seccomp=/etc/podman.seccomp/__NAME__.json \
+--security-opt apparmor=unconfined \
+--rm \
+--replace \
+--dns 127.255.255.53 \
+--network host \
+--hostname __NAME__ \
+--sdnotify conmon \
+--cpu-shares __SHARES__ \
+--cpuset-cpus __CPUS__ \
+--memory __MEM__ \
+--cap-drop all \]===],
+}
+-- Last line in systemd_unit[1] is correct.
 local schema = {
 	service_ip = "/%s/ip", --> string
 	service_ports = "/%s/ports", --> list{string}
@@ -101,19 +147,23 @@ local update_hosts = function()
 	for _, srv in ipairs(running) do
 		if srv ~= "sys_dns" then
 			local ip = kv_service:get(schema.service_ip:format(srv))
-			hosts[#hosts+1] = ("%s %s"):format(ip, srv)
+			hosts[#hosts + 1] = ("%s %s"):format(ip, srv)
 		end
 	end
-	hosts[#hosts+1] = ""
+	hosts[#hosts + 1] = ""
 	local hosts_file = table.concat(hosts, "\n")
-	panic(fs.write(dns_config .. "/hosts", hosts_file), "unable to write system HOSTS file", {})
+	panic(
+		fs.write(dns_config .. "/hosts", hosts_file),
+		"unable to write system HOSTS file",
+		{}
+	)
 end
 M.get_running = function(direct)
 	if not direct then
 		return kv_running:keys()
 	end
 	-- Not from the etcdb but directly from podman
-	local r, so, se = podman({"ps", "-a", "--format", "json"})
+	local r, so, se = podman({ "ps", "-a", "--format", "json" })
 	panic(r, "failure running podman command", {
 		command = "ps",
 		stdout = so,
@@ -124,7 +174,7 @@ M.get_running = function(direct)
 	for _, c in ipairs(ret) do
 		if c["State"] == "running" then
 			for _, n in ipairs(c["Names"]) do
-				names[#names+1] = n
+				names[#names + 1] = n
 			end
 		end
 	end
@@ -138,9 +188,9 @@ end
 M.stop = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
-	systemctl({"disable", "--no-block", "--now", c})
+	systemctl({ "disable", "--no-block", "--now", c })
 	local is_inactive = function()
-		_, so, se = systemctl({"status", c})
+		_, so, se = systemctl({ "status", c })
 		if so:contains("inactive") then
 			return true
 		else
@@ -176,6 +226,19 @@ local start = function(A)
 	})
 	local fname = ("/etc/systemd/system/%s.service"):format(A.param.NAME)
 	local unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
+	unit, changed = unit:gsub("__NAME__", A.param.NAME)
+	panic((changed > 1), "unable to interpolate name", {
+		what = "string.gsub",
+		changed = false,
+		to = A.param.NAME,
+	})
+	unit, changed = unit:gsub("__ADDRESS_FAMILIES__", A.param.ADDRESS_FAMILIES)
+	-- Should only match once.
+	panic((changed == 1), "unable to interpolate RestrictAddressFamilies", {
+		what = "string.gsub",
+		changed = false,
+		to = A.param.ADDRESS_FAMILIES,
+	})
 	-- Should only match once.
 	panic((changed == 1), "unable to interpolate image ID", {
 		what = "string.gsub",
@@ -184,7 +247,7 @@ local start = function(A)
 	})
 	if unit:contains("__IP__") then
 		unit, changed = unit:gsub("__IP__", A.param.IP)
-		panic((changed>=1), "unable to interpolate IP", {
+		panic((changed >= 1), "unable to interpolate IP", {
 			what = "string.gsub",
 			changed = false,
 			to = A.param.IP,
@@ -273,17 +336,21 @@ local assign_ip = function(n, ip)
 	local fnetdev = ("/etc/systemd/network/%s.netdev"):format(n)
 	local fnetwork = ("/etc/systemd/network/%s.network"):format(n)
 	panic(fs.write(fnetdev, netdev), "unable to write .netdev configuration", {
-			what = "dummy network",
-			file = fnetdev,
-		})
-	panic(fs.write(fnetwork, network), "unable to write .network configuration", {
+		what = "dummy network",
+		file = fnetdev,
+	})
+	panic(
+		fs.write(fnetwork, network),
+		"unable to write .network configuration",
+		{
 			what = "dummy network",
 			file = fnetwork,
-		})
+		}
+	)
 	local systemctl = exec.ctx("systemctl")
-	systemctl({"restart", "systemd-networkd"})
+	systemctl({ "restart", "systemd-networkd" })
 	local netcheck = function(wh)
-		local ipargs = {"-j", "addr", "show", "dev", n}
+		local ipargs = { "-j", "addr", "show", "dev", n }
 		local ipcmd = util.retry_f(exec.ctx("ip"))
 		local ret, so, se = ipcmd(ipargs)
 		panic(ret, "failure running ip command", {
@@ -313,9 +380,13 @@ setmetatable(M, {
 			TAG = "Image tag.",
 			CPUS = "Pin container to CPU(s). Argument to podman --cpuset-cpus.",
 			MEM = "Memory limit. Argument to podman --memory.",
-			ARGS = "Arguments to any function hooks.",
+			ARGS = "(table) Arguments to any function hooks.",
 			IP = "Assigned IP for container",
 			SHARES = "CPU share. Argument to podman --cpu-shares.",
+			ADDRESS_FAMILIES = "Address families allowed. Value of systemd RestrictAddressFamilies. Default: AF_INET.",
+			CAPABILITIES = "(table) Linux capabilities, example: net_bind_service.",
+			ENVIRONMENT = "(table) Environment variables.",
+			CMD = "Command line to container.",
 			always_update = "Boolean flag, if `true` always pull the image.",
 		}
 		M.param = {} --> from user
@@ -334,6 +405,7 @@ setmetatable(M, {
 		M.param.CPUS = M.param.CPUS or "1"
 		M.param.IP = M.param.IP or "127.0.0.1"
 		M.param.SHARES = M.param.SHARES or "1024"
+		M.param.ADDRESS_FAMILIES = M.param.ADDRESS_FAMILIES or "AF_INET"
 
 		local systemd = require("systemd." .. M.param.NAME)
 		do
@@ -352,12 +424,38 @@ setmetatable(M, {
 				end
 			end
 			if instance.ports and next(instance.ports) then
-				local kx, ky = kv_service:put(schema.service_ports:format(M.param.NAME), json.encode(instance.ports))
+				local kx, ky = kv_service:put(
+					schema.service_ports:format(M.param.NAME),
+					json.encode(instance.ports)
+				)
 				panic(kx, "unable to add ports to etcdb", {
-					error = ky
+					error = ky,
 				})
 			end
-			M.reg.unit = instance.unit
+			if instance.unit then
+				M.reg.unit = instance.unit
+			else
+				if M.param.CAPABILITIES then
+					for _, c in ipairs(M.param.CAPABILITIES) do
+						systemd_unit[#systemd_unit + 1] = ([[--cap-add %s \]]):format(c)
+					end
+				end
+				if M.param.ENVIRONMENT then
+					for _, e in ipairs(M.param.ENVIRONMENT) do
+						systemd_unit[#systemd_unit + 1] = ([[-e "%s" \]]):format(e)
+					end
+				end
+				for k, v in pairs(instance.mounts) do
+					systemd_unit[#systemd_unit + 1] = ([[--volume %s:%s \]]):format(k, v)
+				end
+				M.param.CMD = M.param.CMD or instance.cmd
+				systemd_unit[#systemd_unit + 1] = ("__ID__ %s"):format(M.param.CMD)
+				systemd_unit[#systemd_unit + 1] = ""
+				systemd_unit[#systemd_unit + 1] = "[Install]"
+				systemd_unit[#systemd_unit + 1] = "WantedBy=multi-user.target"
+				systemd_unit[#systemd_unit + 1] = ""
+				M.reg.unit = table.concat(systemd_unit, "\n")
+			end
 		end
 
 		-- pull
@@ -377,14 +475,14 @@ setmetatable(M, {
 			assign_ip(M.param.NAME, M.param.IP)
 			local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
 			panic(kx, "unable to add ip to etcdb", {
-				error = ky
+				error = ky,
 			})
 		end
 		-- start
 		do
 			fs.mkdir("/etc/podman.seccomp")
 			local fn = ("/etc/podman.seccomp/%s.json"):format(M.param.NAME)
-			local default =  require("seccomp")
+			local default = require("seccomp")
 			local seccomp = json.encode(default)
 			panic(fs.write(fn, seccomp), "unable to write seccomp profile", {
 				filename = fn,
@@ -394,7 +492,7 @@ setmetatable(M, {
 		do
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
 			panic(kx, "unable to add service to etcdb", {
-				error = ky
+				error = ky,
 			})
 		end
 		if M.param.NAME ~= "sys_dns" then
