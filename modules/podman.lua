@@ -190,8 +190,8 @@ M.stop = function(c)
 	local so, se
 	systemctl({ "disable", "--no-block", "--now", c })
 	local is_inactive = function()
-		_, so, se = systemctl({ "status", c })
-		if so:contains("inactive") then
+		_, so, se = systemctl({ "is-active", c })
+		if so == "inactive\n" then
 			return true
 		else
 			return nil, so, se
