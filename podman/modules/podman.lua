@@ -77,7 +77,7 @@ local Ok = function(msg, tbl)
 	return lopper.Ok(msg, tbl)
 end
 local Assert = function(ret, msg, tbl)
-	if not ret then
+	if ret == nil then
 		tbl._module = DSL
 		kv_running:close()
 		kv_service:close()
