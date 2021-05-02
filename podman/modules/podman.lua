@@ -36,10 +36,10 @@ ExecStart=/usr/bin/podman run --name __NAME__ \
 --security-opt label=disable \
 --rm \
 --replace \
---dns 127.255.255.53 \
---network host \
---hostname __NAME__ \
 --sdnotify conmon \
+--network host \
+--dns 127.255.255.53 \
+--hostname __NAME__ \
 --cpu-shares __SHARES__ \
 --cpuset-cpus __CPUS__ \
 --memory __MEM__ \
