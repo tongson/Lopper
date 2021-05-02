@@ -410,12 +410,6 @@ setmetatable(M, {
 			end
 			if next(instance.volumes) then
 				volume(instance.volumes)
-				--[==[for vn in pairs(instance.volumes) do
-					Ok("Checked volume", {
-						name = vn,
-					})
-				end
-				]==]
 			end
 			if instance.ports and next(instance.ports) then
 				local kx, ky = kv_service:put(
