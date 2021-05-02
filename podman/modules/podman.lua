@@ -1,5 +1,6 @@
 local DSL = "podman"
 local domain = os.getenv("PODMAN_DOMAIN") or "host.local"
+local creds = os.getenv("PODMAN_CREDS")
 local systemd_unit = {
 	[===[
 [Unit]
@@ -317,11 +318,16 @@ local id = function(u, t)
 	return nil, "Container image not found."
 end
 local pull = function(u, t)
-	local r, so, se = podman({
+	local pt = {
 		"pull",
 		"--tls-verify",
 		("%s:%s"):format(u, t),
-	})
+	}
+	if creds then
+		table.insert(pt, 2, creds)
+		table.insert(pt, 2, "--creds")
+	end
+	local r, so, se = podman(pt)
 	Assert(r, "unable to pull image", {
 		what = "podman",
 		command = "pull",
