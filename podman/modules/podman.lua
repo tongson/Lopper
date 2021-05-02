@@ -72,11 +72,11 @@ local kv_service = bitcask.open("/etc/podman.etcdb/service")
 local lopper = require("lopper")
 local json = require("json")
 local util = require("util")
-local ok = function(msg, tbl)
+local Ok = function(msg, tbl)
 	tbl._module = DSL
 	return lopper.Ok(msg, tbl)
 end
-local panic = function(ret, msg, tbl)
+local Assert = function(ret, msg, tbl)
 	if not ret then
 		tbl._module = DSL
 		kv_running:close()
@@ -92,9 +92,9 @@ local get_volume = function(n)
 		"inspect",
 		"--all",
 	})
-	panic(ret, "Failure listing volumes", {
+	Assert(ret, "Failure listing volumes", {
 		what = "podman",
-		command = "volume-ls",
+		command = "volume inspect",
 		stdout = so,
 		stderr = se,
 	})
@@ -119,9 +119,9 @@ local volume = function(vt)
 	for x, y in pairs(vt) do
 		if not found[x] then
 			local ret, so, se = podman({ "volume", "create", x })
-			panic(ret, "unable to create volume", {
+			Assert(ret, "unable to create volume", {
 				what = "podman",
-				command = "volume-create",
+				command = "volume create",
 				stdout = so,
 				stderr = se,
 			})
@@ -131,9 +131,9 @@ local volume = function(vt)
 		if type(y) == "table" then
 			for _, cmd in ipairs(y) do
 				local ret, so, se = sh({ "-c", cmd:gsub("__MOUNTPOINT__", mountpoint) })
-				panic(ret, "error executing volume command", {
+				Assert(ret, "error executing volume command", {
 					what = "sh",
-					command = "volume-command",
+					command = "volume ls",
 					stdout = so,
 					stderr = se,
 				})
@@ -153,7 +153,7 @@ local update_hosts = function()
 	end
 	hosts[#hosts + 1] = ""
 	local hosts_file = table.concat(hosts, "\n")
-	panic(
+	Assert(
 		fs.write(dns_config .. "/hosts", hosts_file),
 		"unable to write system HOSTS file",
 		{}
@@ -165,8 +165,8 @@ M.get_running = function(direct)
 	end
 	-- Not from the etcdb but directly from podman
 	local r, so, se = podman({ "ps", "-a", "--format", "json" })
-	panic(r, "failure running podman command", {
-		command = "ps",
+	Assert(r, "failure running podman command", {
+		command = "podman ps",
 		stdout = so,
 		stderr = se,
 	})
@@ -199,7 +199,7 @@ M.stop = function(c)
 		end
 	end
 	local cmd = util.retry_f(is_inactive, 10)
-	panic(cmd(), "failed stopping container", {
+	Assert(cmd(), "failed stopping container", {
 		name = c,
 		stdout = so,
 		stderr = se,
@@ -208,12 +208,12 @@ M.stop = function(c)
 		local try = util.retry_f(kv_running.delete)
 		local deleted = try(kv_running, c)
 		kv_running:close()
-		panic(deleted, "unable to remove container from etcdb/running", {
+		Assert(deleted, "unable to remove container from etcdb/running", {
 			name = c,
 		})
 	end
 	update_hosts()
-	ok("Stopped container(service).", {
+	Ok("Stopped container(service).", {
 		name = c,
 	})
 end
@@ -228,27 +228,27 @@ local start = function(A)
 	local fname = ("/etc/systemd/system/%s.service"):format(A.param.NAME)
 	local unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
 	unit, changed = unit:gsub("__NAME__", A.param.NAME)
-	panic((changed > 1), "unable to interpolate name", {
+	Assert((changed > 1), "unable to interpolate name", {
 		what = "string.gsub",
 		changed = false,
 		to = A.param.NAME,
 	})
 	unit, changed = unit:gsub("__ADDRESS_FAMILIES__", A.reg.address_families)
 	-- Should only match once.
-	panic((changed == 1), "unable to interpolate RestrictAddressFamilies", {
+	Assert((changed == 1), "unable to interpolate RestrictAddressFamilies", {
 		what = "string.gsub",
 		changed = false,
 		to = A.param.ADDRESS_FAMILIES,
 	})
 	-- Should only match once.
-	panic((changed == 1), "unable to interpolate image ID", {
+	Assert((changed == 1), "unable to interpolate image ID", {
 		what = "string.gsub",
 		changed = false,
 		to = A.reg.id,
 	})
 	if unit:contains("__IP__") then
 		unit, changed = unit:gsub("__IP__", A.param.IP)
-		panic((changed >= 1), "unable to interpolate IP", {
+		Assert((changed >= 1), "unable to interpolate IP", {
 			what = "string.gsub",
 			changed = false,
 			to = A.param.IP,
@@ -256,26 +256,26 @@ local start = function(A)
 	end
 	unit, changed = unit:gsub("__CPUS__", A.param.CPUS)
 	-- Should only match once.
-	panic((changed == 1), "unable to interpolate cpuset-cpus", {
+	Assert((changed == 1), "unable to interpolate cpuset-cpus", {
 		what = "string.gsub",
 		changed = false,
 		to = A.param.CPUS,
 	})
 	unit, changed = unit:gsub("__MEM__", A.param.MEM)
 	-- Should only match once.
-	panic((changed == 1), "unable to interpolate memory", {
+	Assert((changed == 1), "unable to interpolate memory", {
 		what = "string.gsub",
 		changed = false,
 		to = A.param.MEM,
 	})
 	unit, changed = unit:gsub("__SHARES__", A.param.SHARES)
 	-- Should only match once.
-	panic((changed == 1), "unable to interpolate cpu-shares", {
+	Assert((changed == 1), "unable to interpolate cpu-shares", {
 		what = "string.gsub",
 		changed = false,
 		to = A.param.SHARES,
 	})
-	panic(fs.write(fname, unit), "unable to write unit", {
+	Assert(fs.write(fname, unit), "unable to write unit", {
 		what = "fs.write",
 		file = fname,
 	})
@@ -285,7 +285,7 @@ local start = function(A)
 		"--now",
 		("%s.service"):format(A.param.NAME),
 	})
-	panic(r, "unable to start service", {
+	Assert(r, "unable to start service", {
 		what = "systemctl",
 		command = "enable",
 		service = A.param.NAME,
@@ -299,7 +299,7 @@ local id = function(u, t)
 		"--format",
 		"json",
 	})
-	panic(r, "unable to list images", {
+	Assert(r, "unable to list images", {
 		what = "podman",
 		command = "images",
 		stdout = so,
@@ -321,7 +321,7 @@ local pull = function(u, t)
 		"--tls-verify",
 		("%s:%s"):format(u, t),
 	})
-	panic(r, "unable to pull image", {
+	Assert(r, "unable to pull image", {
 		what = "podman",
 		command = "pull",
 		url = u,
@@ -336,11 +336,11 @@ local assign_ip = function(n, ip)
 	network = network:gsub("__IP__", ip)
 	local fnetdev = ("/etc/systemd/network/%s.netdev"):format(n)
 	local fnetwork = ("/etc/systemd/network/%s.network"):format(n)
-	panic(fs.write(fnetdev, netdev), "unable to write .netdev configuration", {
+	Assert(fs.write(fnetdev, netdev), "unable to write .netdev configuration", {
 		what = "dummy network",
 		file = fnetdev,
 	})
-	panic(
+	Assert(
 		fs.write(fnetwork, network),
 		"unable to write .network configuration",
 		{
@@ -354,21 +354,19 @@ local assign_ip = function(n, ip)
 		local ipargs = { "-j", "addr", "show", "dev", n }
 		local ipcmd = util.retry_f(exec.ctx("ip"))
 		local ret, so, se = ipcmd(ipargs)
-		panic(ret, "failure running ip command", {
-			what = "dummy network",
+		Assert(ret, "failure running ip command", {
+			command = "ip addr show",
 			stdout = so,
 			stderr = se,
 		})
 		return table.find(json.decode(so), wh)
 	end
 	local ifcheck = util.retry_f(netcheck)
-	panic(ifcheck(n), "ifname did not match", {
-		what = "dummy network",
+	Assert(ifcheck(n), "ifname did not match", {
 		expected = n,
 	})
 	local ipcheck = util.retry_f(netcheck)
-	panic(ipcheck(ip), "local IP did not match", {
-		what = "dummy network",
+	Assert(ipcheck(ip), "local IP did not match", {
 		expected = ip,
 	})
 	return ip
@@ -391,13 +389,10 @@ setmetatable(M, {
 		M.param = {} --> from user
 		M.reg = {} --> generated
 		for k in pairs(p) do
-			if not param[k] then
-				panic(nil, "Invalid parameter given.", {
-					parameter = k,
-				})
-			else
-				M.param[k] = p[k]
-			end
+			Assert(param[k], "Invalid parameter given.", {
+				parameter = k,
+			})
+			M.param[k] = p[k]
 		end
 		M.param.MEM = M.param.MEM or "512m"
 		M.param.ARGS = M.param.ARGS or {}
@@ -415,18 +410,19 @@ setmetatable(M, {
 			end
 			if next(instance.volumes) then
 				volume(instance.volumes)
-				for vn in pairs(instance.volumes) do
-					ok("Checked volume", {
+				--[==[for vn in pairs(instance.volumes) do
+					Ok("Checked volume", {
 						name = vn,
 					})
 				end
+				]==]
 			end
 			if instance.ports and next(instance.ports) then
 				local kx, ky = kv_service:put(
 					schema.service_ports:format(M.param.NAME),
 					json.encode(instance.ports)
 				)
-				panic(kx, "unable to add ports to etcdb", {
+				Assert(kx, "unable to add ports to etcdb", {
 					error = ky,
 				})
 			end
@@ -460,19 +456,12 @@ setmetatable(M, {
 		M.reg.id = id(M.param.URL, M.param.TAG)
 		if M.param.always_update or not M.reg.id then
 			pull(M.param.URL, M.param.TAG)
-			ok("Pulled image", {
-				url = M.param.URL,
-				tag = M.param.TAG,
-			})
 			M.reg.id = id(M.param.URL, M.param.TAG)
-			ok("Got image ID", {
-				id = M.reg.id,
-			})
 		end
 		if M.param.IP then --> Generate systemd-networkd config and record IP into etcdb
 			assign_ip(M.param.NAME, M.param.IP)
 			local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
-			panic(kx, "unable to add ip to etcdb", {
+			Assert(kx, "unable to add ip to etcdb", {
 				error = ky,
 			})
 		end
@@ -481,7 +470,7 @@ setmetatable(M, {
 			local fn = ("/etc/podman.seccomp/%s.json"):format(M.param.NAME)
 			local default = require("seccomp")
 			local seccomp = json.encode(default)
-			panic(fs.write(fn, seccomp), "unable to write seccomp profile", {
+			Assert(fs.write(fn, seccomp), "unable to write seccomp profile", {
 				filename = fn,
 			})
 		end
@@ -498,7 +487,7 @@ setmetatable(M, {
 				end
 			end
 			local cmd = util.retry_f(is_active, 10)
-			panic(cmd(), "failed starting container", {
+			Assert(cmd(), "failed starting container", {
 				name = M.param.NAME,
 				stdout = so,
 				stderr = se,
@@ -506,7 +495,7 @@ setmetatable(M, {
 		end
 		do --> Record into etcdb
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
-			panic(kx, "unable to add service to etcdb", {
+			Assert(kx, "unable to add service to etcdb", {
 				error = ky,
 			})
 		end
@@ -515,7 +504,7 @@ setmetatable(M, {
 		end
 		kv_running:close()
 		kv_service:close()
-		ok("Started systemd unit", {
+		Ok("Started systemd unit", {
 			name = M.param.NAME,
 		})
 	end,
