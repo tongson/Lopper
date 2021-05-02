@@ -1,5 +1,5 @@
 local DSL = "podman"
-local domain = "host.local"
+local domain = os.getenv("PODMAN_DOMAIN") or "host.local"
 local systemd_unit = {
 	[===[
 [Unit]
