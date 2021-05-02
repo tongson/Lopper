@@ -203,9 +203,7 @@ ENV["Script"] = setmetatable({}, {
 		})
 	end,
 })
-ENV["Command"] = function(exe)
-	return Command(exe)
-end
+ENV["Command"] = Command
 ENV["InterfaceAddr"] = InterfaceAddr
 package.preload["lopper"] = function()
 	return {
