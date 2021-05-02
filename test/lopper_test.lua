@@ -58,7 +58,7 @@ T["interpolation #2"] = function()
 end
 
 dummy = require("lopper_dummy")
-T["environment does not cross"] = function()
+T["environment will cross"] = function()
 	T.is_function(dummy.test())
 end
 
