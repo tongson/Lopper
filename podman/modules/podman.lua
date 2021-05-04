@@ -412,8 +412,11 @@ setmetatable(M, {
 		M.param.SHARES = M.param.SHARES or "1024"
 
 		if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
-			local js = fs.read(M.param.ENVIRONMENT)
-			M.param.ENVIRONMENT = json.decode(js)
+			local js = json.decode(fs.read(M.param.ENVIRONMENT))
+			Assert(js, "Invalid JSON.", {
+				file = M.param.ENVIRONMENT
+			})
+			M.param.ENVIRONMENT = js
 		end
 
 		if M.param.ENVIRONMENT and next(M.param.ENVIRONMENT) then
