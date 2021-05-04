@@ -411,6 +411,21 @@ setmetatable(M, {
 		M.param.IP = M.param.IP or "127.0.0.1"
 		M.param.SHARES = M.param.SHARES or "1024"
 
+		if M.param.ENVIRONMENT and next(M.param.ENVIRONMENT) then
+			local password = require("password")
+			for _, kp in ipairs(M.param.ENVIRONMENT) do
+				local st = kp:split("=", true)
+				st[1] = st[1]:upper()
+				if st[1]:contains("PASSWORD") then
+					if password.strength(st[2]) > 4 then
+						Warn("Weak password!!", {
+							password = st[2]
+						})
+					end
+				end
+			end
+		end
+
 		local systemd = require("systemd." .. M.param.NAME)
 		do
 			local instance
