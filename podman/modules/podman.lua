@@ -78,6 +78,10 @@ local Ok = function(msg, tbl)
 	tbl._module = DSL
 	return lopper.Ok(msg, tbl)
 end
+local Warn = function(msg, tbl)
+	tbl._module = DSL
+	return lopper.Warn(msg, tbl)
+end
 local Assert = function(ret, msg, tbl)
 	if ret == nil then
 		tbl._module = DSL
