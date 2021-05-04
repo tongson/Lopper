@@ -393,7 +393,7 @@ setmetatable(M, {
 			ARGS = "(table) Arguments to any function hooks.",
 			IP = "Assigned IP for container",
 			SHARES = "CPU share. Argument to podman --cpu-shares.",
-			ENVIRONMENT = "(table) Environment variables.",
+			ENVIRONMENT = "(table) or JSON file(string) for environment variables.",
 			CMD = "Command line to container.",
 			always_update = "Boolean flag, if `true` always pull the image.",
 		}
@@ -410,6 +410,11 @@ setmetatable(M, {
 		M.param.CPUS = M.param.CPUS or "1"
 		M.param.IP = M.param.IP or "127.0.0.1"
 		M.param.SHARES = M.param.SHARES or "1024"
+
+		if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
+			local js = fs.read(M.param.ENVIRONMENT)
+			M.param.ENVIRONMENT = json.decode(js)
+		end
 
 		if M.param.ENVIRONMENT and next(M.param.ENVIRONMENT) then
 			local password = require("password")
