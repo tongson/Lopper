@@ -192,6 +192,7 @@ M.get_ports = function(srv)
 	local ports = kv_service:get(schema.service_ports:format(srv))
 	return json.decode(ports)
 end
+M.get_volume = get_volume
 M.stop = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
