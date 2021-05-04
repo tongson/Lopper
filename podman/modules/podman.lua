@@ -414,8 +414,7 @@ setmetatable(M, {
 		if M.param.ENVIRONMENT and next(M.param.ENVIRONMENT) then
 			local password = require("password")
 			for k, v in pairs(M.param.ENVIRONMENT) do
-				k = k:upper()
-				if k:contains("PASSWORD") then
+				if (k:upper()):contains("PASSWORD") then
 					if password.strength(v) > 4 then
 						Warn("Weak password!!", {
 							password = v
