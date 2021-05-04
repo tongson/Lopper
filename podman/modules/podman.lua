@@ -224,7 +224,7 @@ M.stop = function(c)
 		name = c,
 	})
 end
-local start = function(A)
+local podman_start = function(A)
 	local systemctl = exec.ctx("systemctl")
 	systemctl({
 		"disable",
@@ -501,7 +501,7 @@ setmetatable(M, {
 				filename = fn,
 			})
 		end
-		start(M)
+		podman_start(M)
 		do --> Check if really up
 			local systemctl = exec.ctx("systemctl")
 			local so, se
