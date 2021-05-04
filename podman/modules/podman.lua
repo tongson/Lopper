@@ -165,7 +165,7 @@ local update_hosts = function()
 		{}
 	)
 end
-M.get_running = function(direct)
+M.running = function(direct)
 	if not direct then
 		return kv_running:keys()
 	end
@@ -187,12 +187,12 @@ M.get_running = function(direct)
 	end
 	return names
 end
-M.get_ports = function(srv)
+M.ports = function(srv)
 	-- From etcdb
 	local ports = kv_service:get(schema.service_ports:format(srv))
 	return json.decode(ports)
 end
-M.get_volume = get_volume
+M.volume = get_volume
 M.stop = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
