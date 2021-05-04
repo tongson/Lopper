@@ -413,13 +413,12 @@ setmetatable(M, {
 
 		if M.param.ENVIRONMENT and next(M.param.ENVIRONMENT) then
 			local password = require("password")
-			for _, kp in ipairs(M.param.ENVIRONMENT) do
-				local st = kp:split("=", true)
-				st[1] = st[1]:upper()
-				if st[1]:contains("PASSWORD") then
-					if password.strength(st[2]) > 4 then
+			for k, v in pairs(M.param.ENVIRONMENT) do
+				k = k:upper()
+				if k:contains("PASSWORD") then
+					if password.strength(v) > 4 then
 						Warn("Weak password!!", {
-							password = st[2]
+							password = v
 						})
 					end
 				end
@@ -454,8 +453,8 @@ setmetatable(M, {
 					systemd_unit[#systemd_unit + 1] = ([[--cap-add %s \]]):format(c)
 				end
 				if M.param.ENVIRONMENT then
-					for _, e in ipairs(M.param.ENVIRONMENT) do
-						systemd_unit[#systemd_unit + 1] = ([[-e "%s" \]]):format(e)
+					for k, v in pairs(M.param.ENVIRONMENT) do
+						systemd_unit[#systemd_unit + 1] = ([[-e "%s=%s" \]]):format(k, v)
 					end
 				end
 				for k, v in pairs(instance.mounts) do
