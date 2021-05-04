@@ -224,6 +224,37 @@ M.stop = function(c)
 		name = c,
 	})
 end
+M.start = function(c)
+	local systemctl = exec.ctx("systemctl")
+	local so, se
+	systemctl({ "enable", "--no-block", "--now", c })
+	local is_active = function()
+		_, so, se = systemctl({ "is-active", c })
+		if so == "active\n" then
+			return true
+		else
+			return nil, so, se
+		end
+	end
+	local cmd = util.retry_f(is_active, 10)
+	Assert(cmd(), "failed starting container", {
+		name = c,
+		stdout = so,
+		stderr = se,
+	})
+	if not kv_running:has(c) then
+		local try = util.retry_f(kv_running.put)
+		local added = try(kv_running, c)
+		kv_running:close()
+		Assert(added, "unable to add container to etcdb/running", {
+			name = c,
+		})
+	end
+	update_hosts()
+	Ok("Started container(service).", {
+		name = c,
+	})
+end
 local podman_start = function(A)
 	local systemctl = exec.ctx("systemctl")
 	systemctl({
