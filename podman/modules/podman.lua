@@ -238,7 +238,7 @@ E.stop = function(c)
 		name = c,
 	})
 end
-E.start = function(c)
+E.start = function(c, stats)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
 	systemctl({"daemon-reload"})
@@ -251,15 +251,48 @@ E.start = function(c)
 			return nil, so, se
 		end
 	end
-	local cmd = util.retry_f(is_active, 10)
-	Assert(cmd(), "failed starting container", {
-		name = c,
-		stdout = so,
-		stderr = se,
-	})
-	Ok("Started container(service).", {
-		name = c,
-	})
+	if not stats then
+		local cmd = util.retry_f(is_active, 10)
+		Assert(cmd(), "failed starting container", {
+			name = c,
+			stdout = so,
+			stderr = se,
+		})
+		Ok("Started container(service).", {
+			name = c,
+			})
+	else
+		repeat
+		until is_active()
+		local s = {
+			cpu = {},
+			mem = {},
+		}
+		local x, y, z
+		local r, jo = podman({
+				"stats",
+				"--format",
+				"json",
+				"--no-stream",
+				c,
+			})
+		while r and is_active() do
+			x = json.decode(jo)
+			if y ~= x[1]["cpu_percent"] then
+				y = x[1]["cpu_percent"]
+				s.cpu[#s.cpu+1]= y
+			end
+			if z ~= x[1]["mem_percent"] then 
+				z = x[1]["mem_percent"]
+				s.mem[#s.mem+1]= z
+			end
+		end
+		Ok("Container stats.", {
+			name = c,
+			cpu = s.cpu,
+			mem = s.mem,
+		})
+	end
 end
 E.enable = function(c)
 	local systemctl = exec.ctx("systemctl")
