@@ -299,6 +299,7 @@ E.start = function(c, stats)
 				"--no-stream",
 				c,
 			})
+			os.sleep(stats)
 		end
 		Ok("Container stats.", {
 			name = c,
