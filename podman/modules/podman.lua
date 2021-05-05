@@ -92,7 +92,8 @@ end
 local M = {}
 local podman = exec.ctx("podman")
 local get_id = function(n)
-	local r, so, se = podman({
+	local try = util.retry_f(podman)
+	local r, so, se = try({
 			"inspect",
 			"--format",
 			"json",
