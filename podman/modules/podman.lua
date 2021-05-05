@@ -22,7 +22,6 @@ NoNewPrivileges=yes
 RemoveIPC=yes
 DevicePolicy=closed
 PrivateTmp=yes
-PrivateNetwork=false
 ProtectKernelModules=yes
 ProtectSystem=full
 ProtectHome=yes
@@ -39,7 +38,7 @@ ExecStart=/usr/bin/podman run --name __NAME__ \
 --rm \
 --replace \
 --sdnotify conmon \
---network host \
+--network __NETWORK__ \
 --dns 127.255.255.53 \
 --hostname __NAME__ \
 --cpu-shares __SHARES__ \
@@ -255,14 +254,16 @@ M.start = function(c)
 		name = c,
 	})
 end
-local podman_start = function(A)
+local podman_interpolate = function(A)
 	local systemctl = exec.ctx("systemctl")
-	systemctl({
-		"disable",
-		"--no-block",
-		"--now",
-		("%s.service"):format(A.param.NAME),
-	})
+	if A.param.NETWORK == "host" then
+		systemctl({
+			"disable",
+			"--no-block",
+			"--now",
+			("%s.service"):format(A.param.NAME),
+		})
+	end
 	local fname = ("/etc/systemd/system/%s.service"):format(A.param.NAME)
 	local unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
 	unit, changed = unit:gsub("__NAME__", A.param.NAME)
@@ -313,23 +314,32 @@ local podman_start = function(A)
 		changed = false,
 		to = A.param.SHARES,
 	})
+	unit, changed = unit:gsub("__NETWORK__", A.param.NETWORK)
+	-- Should only match once.
+	Assert((changed == 1), "unable to interpolate network", {
+		what = "string.gsub",
+		changed = false,
+		to = A.param.NETWORK,
+	})
 	Assert(fs.write(fname, unit), "unable to write unit", {
 		what = "fs.write",
 		file = fname,
 	})
-	local r, so, se = systemctl({
-		"enable",
-		"--no-block",
-		"--now",
-		("%s.service"):format(A.param.NAME),
-	})
-	Assert(r, "unable to start service", {
-		what = "systemctl",
-		command = "enable",
-		service = A.param.NAME,
-		stdout = so,
-		stderr = se,
-	})
+	if A.param.NETWORK == "host" then
+		local r, so, se = systemctl({
+			"enable",
+			"--no-block",
+			"--now",
+			("%s.service"):format(A.param.NAME),
+		})
+		Assert(r, "unable to start service", {
+			what = "systemctl",
+			command = "enable",
+			service = A.param.NAME,
+			stdout = so,
+			stderr = se,
+		})
+	end
 end
 local id = function(u, t)
 	local r, so, se = podman({
@@ -426,6 +436,7 @@ setmetatable(M, {
 			IP = "Assigned IP for container",
 			SHARES = "CPU share. Argument to podman --cpu-shares.",
 			ENVIRONMENT = "(table) or JSON file(string) for environment variables.",
+			NETWORK = "private network name.",
 			CMD = "Command line to container.",
 			always_update = "Boolean flag, if `true` always pull the image.",
 		}
@@ -442,6 +453,7 @@ setmetatable(M, {
 		M.param.CPUS = M.param.CPUS or "1"
 		M.param.IP = M.param.IP or "127.0.0.1"
 		M.param.SHARES = M.param.SHARES or "1024"
+		M.param.NETWORK = M.param.NETWORK or "host"
 
 		if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
 			local js = json.decode(fs.read(M.param.ENVIRONMENT))
@@ -520,7 +532,7 @@ setmetatable(M, {
 			pull(M.param.URL, M.param.TAG)
 			M.reg.id = id(M.param.URL, M.param.TAG)
 		end
-		if M.param.IP then --> Generate systemd-networkd config and record IP into etcdb
+		if M.param.IP and M.param.NETWORK == "host" then --> Generate systemd-networkd config and record IP into etcdb
 			assign_ip(M.param.NAME, M.param.IP)
 			local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
 			Assert(kx, "unable to add ip to etcdb", {
@@ -536,8 +548,8 @@ setmetatable(M, {
 				filename = fn,
 			})
 		end
-		podman_start(M)
-		do --> Check if really up
+		podman_interpolate(M)
+		if M.param.NETWORK == "host" then
 			local systemctl = exec.ctx("systemctl")
 			local so, se
 			local is_active = function()
@@ -554,21 +566,26 @@ setmetatable(M, {
 				stdout = so,
 				stderr = se,
 			})
-		end
-		do --> Record into etcdb
-			local kx, ky = kv_running:put(M.param.NAME, "ok")
-			Assert(kx, "unable to add service to etcdb", {
-				error = ky,
+			do --> Record into etcdb
+				local kx, ky = kv_running:put(M.param.NAME, "ok")
+				Assert(kx, "unable to add service to etcdb", {
+					error = ky,
+				})
+			end
+			if M.param.NAME ~= "sys_dns" then
+				update_hosts()
+			end
+			kv_running:close()
+			kv_service:close()
+			Ok("Started systemd unit", {
+				name = M.param.NAME,
+			})
+		else
+			Ok("Done.", {
+				name = M.param.NAME,
+				network = M.param.NETWORK,
 			})
 		end
-		if M.param.NAME ~= "sys_dns" then
-			update_hosts()
-		end
-		kv_running:close()
-		kv_service:close()
-		Ok("Started systemd unit", {
-			name = M.param.NAME,
-		})
 	end,
 })
 return M
