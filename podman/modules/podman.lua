@@ -242,6 +242,7 @@ end
 M.start = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
+	systemctl({"daemon-reload"})
 	systemctl({ "start", c })
 	local is_active = function()
 		_, so, se = systemctl({ "is-active", c })
@@ -264,6 +265,7 @@ end
 M.enable = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
+	systemctl({"daemon-reload"})
 	systemctl({ "enable", "--no-block", "--now", c })
 	local is_active = function()
 		_, so, se = systemctl({ "is-active", c })
