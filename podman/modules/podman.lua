@@ -556,7 +556,7 @@ E.config = function(p)
 		local password = require("password")
 		for k, v in pairs(M.param.ENVIRONMENT) do
 			if (k:upper()):contains("PASSWORD") then
-				if password.strength(v) > 4 then
+				if password.strength(v) < 4 then
 					Warn("Weak password!!", {
 						password = v
 					})
