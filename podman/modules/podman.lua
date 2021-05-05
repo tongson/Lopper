@@ -267,8 +267,9 @@ E.start = function(c, stats)
 		local s = {
 			cpu = {},
 			mem = {},
+			pids = {},
 		}
-		local x, y, z
+		local x, y, z, pids
 		local r, jo = podman({
 				"stats",
 				"--format",
@@ -286,11 +287,16 @@ E.start = function(c, stats)
 				z = x[1]["mem_percent"]
 				s.mem[#s.mem+1]= z
 			end
+			if pids ~= x[1]["pids"] then 
+				pids = x[1]["pids"]
+				s.pids[#s.pids+1]= pids
+			end
 		end
 		Ok("Container stats.", {
 			name = c,
 			cpu = s.cpu,
 			mem = s.mem,
+			pids = s.pids,
 		})
 	end
 end
