@@ -519,7 +519,11 @@ setmetatable(M, {
 			end
 		end
 
-		local systemd = require("systemd." .. M.param.NAME)
+		local reqtry, modul = pcall(require, "systemd." .. M.param.NAME)
+		local systemd = {}
+		if reqtry == true then
+			systemd = modul
+		end
 		do
 			local instance
 			if next(M.param.ARGS) then
