@@ -241,6 +241,28 @@ end
 M.start = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
+	systemctl({ "start", c })
+	local is_active = function()
+		_, so, se = systemctl({ "is-active", c })
+		if so == "active\n" then
+			return true
+		else
+			return nil, so, se
+		end
+	end
+	local cmd = util.retry_f(is_active, 10)
+	Assert(cmd(), "failed starting container", {
+		name = c,
+		stdout = so,
+		stderr = se,
+	})
+	Ok("Started container(service).", {
+		name = c,
+	})
+end
+M.enable = function(c)
+	local systemctl = exec.ctx("systemctl")
+	local so, se
 	systemctl({ "enable", "--no-block", "--now", c })
 	local is_active = function()
 		_, so, se = systemctl({ "is-active", c })
