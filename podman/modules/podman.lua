@@ -39,7 +39,6 @@ ExecStart=/usr/bin/podman run --name __NAME__ \
 --replace \
 --sdnotify conmon \
 --network __NETWORK__ \
---dns 127.255.255.53 \
 --hostname __NAME__ \
 --cpu-shares __SHARES__ \
 --cpuset-cpus __CPUS__ \
@@ -89,7 +88,7 @@ local Assert = function(ret, msg, tbl)
 		return lopper.Panic(msg, tbl)
 	end
 end
-local M = {}
+local E = {}
 local podman = exec.ctx("podman")
 local get_id = function(n)
 	local try = util.retry_f(podman)
@@ -180,7 +179,7 @@ local update_hosts = function()
 		{}
 	)
 end
-M.running = function(direct)
+E.running = function(direct)
 	if not direct then
 		return kv_running:keys()
 	end
@@ -202,13 +201,13 @@ M.running = function(direct)
 	end
 	return names
 end
-M.ports = function(srv)
+E.ports = function(srv)
 	-- From etcdb
 	local ports = kv_service:get(schema.service_ports:format(srv))
 	return json.decode(ports)
 end
-M.volume = get_volume
-M.stop = function(c)
+E.volume = get_volume
+E.stop = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
 	systemctl({ "disable", "--no-block", "--now", c })
@@ -239,7 +238,7 @@ M.stop = function(c)
 		name = c,
 	})
 end
-M.start = function(c)
+E.start = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
 	systemctl({"daemon-reload"})
@@ -262,7 +261,7 @@ M.start = function(c)
 		name = c,
 	})
 end
-M.enable = function(c)
+E.enable = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
 	systemctl({"daemon-reload"})
@@ -464,175 +463,177 @@ local assign_ip = function(n, ip)
 	})
 	return ip
 end
-setmetatable(M, {
-	__call = function(_, p)
-		local param = {
-			NAME = "Unit name.",
-			URL = "Image URL.",
-			TAG = "Image tag.",
-			CPUS = "Pin container to CPU(s). Argument to podman --cpuset-cpus.",
-			MEM = "Memory limit. Argument to podman --memory.",
-			ARGS = "(table) Arguments to any function hooks.",
-			IP = "Assigned IP for container",
-			SHARES = "CPU share. Argument to podman --cpu-shares.",
-			ENVIRONMENT = "(table) or JSON file(string) for environment variables.",
-			NETWORK = "private network name.",
-			CMD = "Command line to container.",
-			always_update = "Boolean flag, if `true` always pull the image.",
-		}
-		M.param = {} --> from user
-		M.reg = {} --> generated
-		for k in pairs(p) do
-			Assert(param[k], "Invalid parameter given.", {
-				parameter = k,
-			})
-			M.param[k] = p[k]
-		end
-		M.param.MEM = M.param.MEM or "512m"
-		M.param.ARGS = M.param.ARGS or {}
-		M.param.CPUS = M.param.CPUS or "1"
-		M.param.IP = M.param.IP or "127.0.0.1"
-		M.param.SHARES = M.param.SHARES or "1024"
-		M.param.NETWORK = M.param.NETWORK or "host"
-		if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" then
-			M.param.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK))
-		end
+E.config = function(p)
+	local M = {}
+	local param = {
+		NAME = "Unit name.",
+		URL = "Image URL.",
+		TAG = "Image tag.",
+		CPUS = "Pin container to CPU(s). Argument to podman --cpuset-cpus.",
+		MEM = "Memory limit. Argument to podman --memory.",
+		ARGS = "(table) Arguments to any function hooks.",
+		IP = "Assigned IP for container",
+		SHARES = "CPU share. Argument to podman --cpu-shares.",
+		ENVIRONMENT = "(table) or JSON file(string) for environment variables.",
+		NETWORK = "private network name.",
+		CMD = "Command line to container.",
+		always_update = "Boolean flag, if `true` always pull the image.",
+	}
+	M.param = {} --> from user
+	M.reg = {} --> generated
+	for k in pairs(p) do
+		Assert(param[k], "Invalid parameter given.", {
+			parameter = k,
+		})
+		M.param[k] = p[k]
+	end
+	M.param.MEM = M.param.MEM or "512m"
+	M.param.ARGS = M.param.ARGS or {}
+	M.param.CPUS = M.param.CPUS or "1"
+	M.param.IP = M.param.IP or "127.0.0.1"
+	M.param.SHARES = M.param.SHARES or "1024"
+	M.param.NETWORK = M.param.NETWORK or "host"
+	if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" then
+		M.param.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK))
+	end
 
-		if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
-			local js = json.decode(fs.read(M.param.ENVIRONMENT))
-			Assert(js, "Invalid JSON.", {
-				file = M.param.ENVIRONMENT
-			})
-			M.param.ENVIRONMENT = js
-		end
+	if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
+		local js = json.decode(fs.read(M.param.ENVIRONMENT))
+		Assert(js, "Invalid JSON.", {
+			file = M.param.ENVIRONMENT
+		})
+		M.param.ENVIRONMENT = js
+	end
 
-		if M.param.ENVIRONMENT and next(M.param.ENVIRONMENT) then
-			local password = require("password")
-			for k, v in pairs(M.param.ENVIRONMENT) do
-				if (k:upper()):contains("PASSWORD") then
-					if password.strength(v) > 4 then
-						Warn("Weak password!!", {
-							password = v
-						})
-					end
+	if M.param.ENVIRONMENT and next(M.param.ENVIRONMENT) then
+		local password = require("password")
+		for k, v in pairs(M.param.ENVIRONMENT) do
+			if (k:upper()):contains("PASSWORD") then
+				if password.strength(v) > 4 then
+					Warn("Weak password!!", {
+						password = v
+					})
 				end
 			end
 		end
+	end
 
-		local reqtry, modul = pcall(require, "systemd." .. M.param.NAME)
-		local systemd = {}
-		if reqtry == true then
-			systemd = modul
+	local reqtry, modul = pcall(require, "systemd." .. M.param.NAME)
+	local systemd = {}
+	if reqtry == true then
+		systemd = modul
+	end
+	do
+		local instance
+		if next(M.param.ARGS) then
+			instance = systemd(M.param.ARGS)
+		else
+			instance = systemd
 		end
-		do
-			local instance
-			if next(M.param.ARGS) then
-				instance = systemd(M.param.ARGS)
-			else
-				instance = systemd
-			end
-			if instance.volumes and next(instance.volumes) then
-				volume(instance.volumes)
-			end
-			if instance.ports and next(instance.ports) then
-				local kx, ky = kv_service:put(
-					schema.service_ports:format(M.param.NAME),
-					json.encode(instance.ports)
-				)
-				Assert(kx, "unable to add ports to etcdb", {
-					error = ky,
-				})
-			end
-			M.reg.address_families = instance.address_families or "AF_INET"
-			if instance.unit then
-				M.reg.unit = instance.unit
-			else
-				if instance.capabilities and next(instance.capabilities) then
-					for _, c in ipairs(instance.capabilities) do
-						systemd_unit[#systemd_unit + 1] = ([[--cap-add %s \]]):format(c)
-					end
-				end
-				if M.param.ENVIRONMENT then
-					for k, v in pairs(M.param.ENVIRONMENT) do
-						systemd_unit[#systemd_unit + 1] = ([[-e "%s=%s" \]]):format(k, v)
-					end
-				end
-				if instance.mounts and next(instance.mounts) then
-					for k, v in pairs(instance.mounts) do
-						systemd_unit[#systemd_unit + 1] = ([[--volume %s:%s \]]):format(k, v)
-					end
-				end
-				instance.cmd = instance.cmd or ""
-				M.param.CMD = M.param.CMD or instance.cmd
-				systemd_unit[#systemd_unit + 1] = ("__ID__ %s"):format(M.param.CMD)
-				systemd_unit[#systemd_unit + 1] = ""
-				systemd_unit[#systemd_unit + 1] = "[Install]"
-				systemd_unit[#systemd_unit + 1] = "WantedBy=multi-user.target"
-				systemd_unit[#systemd_unit + 1] = ""
-				M.reg.unit = table.concat(systemd_unit, "\n")
-			end
+		if instance.volumes and next(instance.volumes) then
+			volume(instance.volumes)
 		end
-
-		-- pull
-		M.reg.id = id(M.param.URL, M.param.TAG)
-		if M.param.always_update or not M.reg.id then
-			pull(M.param.URL, M.param.TAG)
-			M.reg.id = id(M.param.URL, M.param.TAG)
-		end
-		if M.param.IP and M.param.NETWORK == "host" then --> Generate systemd-networkd config and record IP into etcdb
-			assign_ip(M.param.NAME, M.param.IP)
-			local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
-			Assert(kx, "unable to add ip to etcdb", {
+		if instance.ports and next(instance.ports) then
+			local kx, ky = kv_service:put(
+				schema.service_ports:format(M.param.NAME),
+				json.encode(instance.ports)
+			)
+			Assert(kx, "unable to add ports to etcdb", {
 				error = ky,
 			})
 		end
-		do --> Generate seccomp profile
-			fs.mkdir("/etc/podman.seccomp")
-			local fn = ("/etc/podman.seccomp/%s.json"):format(M.param.NAME)
-			local default = require("seccomp")
-			local seccomp = json.encode(default)
-			Assert(fs.write(fn, seccomp), "unable to write seccomp profile", {
-				filename = fn,
-			})
-		end
-		podman_interpolate(M)
-		if M.param.NETWORK == "host" then
-			local systemctl = exec.ctx("systemctl")
-			local so, se
-			local is_active = function()
-				_, so, se = systemctl({ "is-active", M.param.NAME })
-				if so == "active\n" then
-					return true
-				else
-					return nil, so, se
+		M.reg.address_families = instance.address_families or "AF_INET"
+		if instance.unit then
+			M.reg.unit = instance.unit
+		else
+			if instance.capabilities and next(instance.capabilities) then
+				for _, c in ipairs(instance.capabilities) do
+					systemd_unit[#systemd_unit + 1] = ([[--cap-add %s \]]):format(c)
 				end
 			end
-			local cmd = util.retry_f(is_active, 10)
-			Assert(cmd(), "failed starting container", {
-				name = M.param.NAME,
-				stdout = so,
-				stderr = se,
-			})
-			do --> Record into etcdb
-				local kx, ky = kv_running:put(M.param.NAME, "ok")
-				Assert(kx, "unable to add service to etcdb", {
-					error = ky,
-				})
+			if M.param.ENVIRONMENT then
+				for k, v in pairs(M.param.ENVIRONMENT) do
+					systemd_unit[#systemd_unit + 1] = ([[-e "%s=%s" \]]):format(k, v)
+				end
 			end
-			if M.param.NAME ~= "sys_dns" then
-				update_hosts()
+			if instance.mounts and next(instance.mounts) then
+				for k, v in pairs(instance.mounts) do
+					systemd_unit[#systemd_unit + 1] = ([[--volume %s:%s \]]):format(k, v)
+				end
 			end
-			kv_running:close()
-			kv_service:close()
-			Ok("Started systemd unit", {
-				name = M.param.NAME,
-			})
-		else
-			Ok("Done.", {
-				name = M.param.NAME,
-				network = M.param.NETWORK,
+			if M.param.NETWORK == "host" then
+				systemd_unit[#systemd_unit + 1] = [[--dns 127.255.255.53 \]]
+			end
+			instance.cmd = instance.cmd or ""
+			M.param.CMD = M.param.CMD or instance.cmd
+			systemd_unit[#systemd_unit + 1] = ("__ID__ %s"):format(M.param.CMD)
+			systemd_unit[#systemd_unit + 1] = ""
+			systemd_unit[#systemd_unit + 1] = "[Install]"
+			systemd_unit[#systemd_unit + 1] = "WantedBy=multi-user.target"
+			systemd_unit[#systemd_unit + 1] = ""
+			M.reg.unit = table.concat(systemd_unit, "\n")
+		end
+	end
+
+	-- pull
+	M.reg.id = id(M.param.URL, M.param.TAG)
+	if M.param.always_update or not M.reg.id then
+		pull(M.param.URL, M.param.TAG)
+		M.reg.id = id(M.param.URL, M.param.TAG)
+	end
+	if M.param.IP and M.param.NETWORK == "host" then --> Generate systemd-networkd config and record IP into etcdb
+		assign_ip(M.param.NAME, M.param.IP)
+		local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
+		Assert(kx, "unable to add ip to etcdb", {
+			error = ky,
+		})
+	end
+	do --> Generate seccomp profile
+		fs.mkdir("/etc/podman.seccomp")
+		local fn = ("/etc/podman.seccomp/%s.json"):format(M.param.NAME)
+		local default = require("seccomp")
+		local seccomp = json.encode(default)
+		Assert(fs.write(fn, seccomp), "unable to write seccomp profile", {
+			filename = fn,
+		})
+	end
+	podman_interpolate(M)
+	if M.param.NETWORK == "host" then
+		local systemctl = exec.ctx("systemctl")
+		local so, se
+		local is_active = function()
+			_, so, se = systemctl({ "is-active", M.param.NAME })
+			if so == "active\n" then
+				return true
+			else
+				return nil, so, se
+			end
+		end
+		local cmd = util.retry_f(is_active, 10)
+		Assert(cmd(), "failed starting container", {
+			name = M.param.NAME,
+			stdout = so,
+			stderr = se,
+		})
+		do --> Record into etcdb
+			local kx, ky = kv_running:put(M.param.NAME, "ok")
+			Assert(kx, "unable to add service to etcdb", {
+				error = ky,
 			})
 		end
-	end,
-})
-return M
+		if M.param.NAME ~= "sys_dns" then
+			update_hosts()
+		end
+		kv_running:close()
+		kv_service:close()
+		Ok("Started systemd unit", {
+			name = M.param.NAME,
+		})
+	else
+		Ok("Done.", {
+			name = M.param.NAME,
+			network = M.param.NETWORK,
+		})
+	end
+end
+return E
