@@ -472,7 +472,7 @@ setmetatable(M, {
 			else
 				instance = systemd
 			end
-			if next(instance.volumes) then
+			if instance.volumes and next(instance.volumes) then
 				volume(instance.volumes)
 			end
 			if instance.ports and next(instance.ports) then
@@ -488,16 +488,20 @@ setmetatable(M, {
 			if instance.unit then
 				M.reg.unit = instance.unit
 			else
-				for _, c in ipairs(instance.capabilities) do
-					systemd_unit[#systemd_unit + 1] = ([[--cap-add %s \]]):format(c)
+				if instance.capabilities and next(instance.capabilities) then
+					for _, c in ipairs(instance.capabilities) do
+						systemd_unit[#systemd_unit + 1] = ([[--cap-add %s \]]):format(c)
+					end
 				end
 				if M.param.ENVIRONMENT then
 					for k, v in pairs(M.param.ENVIRONMENT) do
 						systemd_unit[#systemd_unit + 1] = ([[-e "%s=%s" \]]):format(k, v)
 					end
 				end
-				for k, v in pairs(instance.mounts) do
-					systemd_unit[#systemd_unit + 1] = ([[--volume %s:%s \]]):format(k, v)
+				if instance.mounts and next(instance.mounts) then
+					for k, v in pairs(instance.mounts) do
+						systemd_unit[#systemd_unit + 1] = ([[--volume %s:%s \]]):format(k, v)
+					end
 				end
 				instance.cmd = instance.cmd or ""
 				M.param.CMD = M.param.CMD or instance.cmd
