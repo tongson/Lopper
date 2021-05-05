@@ -270,7 +270,8 @@ E.start = function(c, stats)
 			pids = {},
 		}
 		local x, y, z, pids
-		local r, jo = podman({
+		local r, jo
+		r, jo = podman({
 				"stats",
 				"--format",
 				"json",
@@ -291,6 +292,13 @@ E.start = function(c, stats)
 				pids = x[1]["pids"]
 				s.pids[#s.pids+1]= pids
 			end
+			r, jo = podman({
+				"stats",
+				"--format",
+				"json",
+				"--no-stream",
+				c,
+			})
 		end
 		Ok("Container stats.", {
 			name = c,
