@@ -91,6 +91,21 @@ local Assert = function(ret, msg, tbl)
 end
 local M = {}
 local podman = exec.ctx("podman")
+local get_id = function(n)
+	local r, so, se = podman({
+			"inspect",
+			"--format",
+			"json",
+			n,
+		})
+	Assert(r, "Unable to find container.", {
+		stdout = so,
+		stderr = se,
+		name = n,
+	})
+	local t = json.decode(so)
+	return t[1]["Id"]
+end
 local get_volume = function(n)
 	local ret, so, se = podman({
 		"volume",
@@ -454,6 +469,9 @@ setmetatable(M, {
 		M.param.IP = M.param.IP or "127.0.0.1"
 		M.param.SHARES = M.param.SHARES or "1024"
 		M.param.NETWORK = M.param.NETWORK or "host"
+		if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" then
+			M.param.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK))
+		end
 
 		if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
 			local js = json.decode(fs.read(M.param.ENVIRONMENT))
