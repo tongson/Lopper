@@ -278,6 +278,19 @@ E.start = function(c, stats)
 				"--no-stream",
 				c,
 			})
+		do
+			local tt = 0
+			repeat
+				tt = tt + 1
+				x = json.decode(jo)
+			until type(x) == "table" or tt == 10
+			if tt == 10 then
+				Assert(nil, "Did not return a valid output.", {
+					name = c,
+					command = "podman stats",
+				})
+			end
+		end
 		while r and is_active() do
 			x = json.decode(jo)
 			if y ~= x[1]["cpu_percent"] then
