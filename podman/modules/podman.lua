@@ -1,7 +1,7 @@
 local DSL = "podman"
 local domain = os.getenv("PODMAN_DOMAIN") or "host.local"
 local creds = os.getenv("PODMAN_CREDS")
-local systemd_unit = {
+local systemd_unit_start = {
 	[===[
 [Unit]
 Description=__NAME__ Container
@@ -607,6 +607,7 @@ E.config = function(p)
 		if instance.unit then
 			M.reg.unit = instance.unit
 		else
+			local systemd_unit = util.shallowcopy(systemd_unit_start)
 			if instance.capabilities and next(instance.capabilities) then
 				for _, c in ipairs(instance.capabilities) do
 					systemd_unit[#systemd_unit + 1] = ([[--cap-add %s \]]):format(c)
