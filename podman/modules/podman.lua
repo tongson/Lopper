@@ -530,6 +530,7 @@ E.config = function(p)
 	local M = {}
 	local param = {
 		NAME = "Unit name.",
+		BASE = "Base unit.",
 		URL = "Image URL.",
 		TAG = "Image tag.",
 		CPUS = "Pin container to CPU(s). Argument to podman --cpuset-cpus.",
@@ -581,10 +582,17 @@ E.config = function(p)
 		end
 	end
 
-	local reqtry, modul = pcall(require, "systemd." .. M.param.NAME)
 	local systemd = {}
-	if reqtry == true then
-		systemd = modul
+	do
+		local reqtry, modul
+		if M.param.BASE then
+			reqtry, modul = pcall(require, "systemd." .. M.param.BASE)
+		else
+			reqtry, modul = pcall(require, "systemd." .. M.param.NAME)
+		end
+		if reqtry == true then
+			systemd = modul
+		end
 	end
 	do
 		local instance
