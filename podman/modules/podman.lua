@@ -381,6 +381,7 @@ E.start = function(c, stats)
 		end
 		local _, go = journalctl(jargs)
 		local _, to = systemctl({"status", "-o", "json-pretty", c})
+		--> No error checking, we do not want to interfere with a finished run.
 		fs.write(("%s/%s.journal.json"):format(logdir, c), go)
 		fs.write(("%s/%s.status.json"):format(logdir, c), to)
 		fs.write(("%s/%s.output.json"):format(logdir, c), json.encode(data))
