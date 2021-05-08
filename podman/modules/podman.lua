@@ -10,6 +10,8 @@ After=network-online.target
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=-/etc/podman.env/%p
+EnvironmentFile=-/etc/podman.env/%p@%i
 Restart=on-failure
 RestartSec=5
 Type=notify
