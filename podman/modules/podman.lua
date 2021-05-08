@@ -275,9 +275,11 @@ end
 E.start = function(c, stats)
 	fs.mkdir("/var/log/podman") -- Checked in the next mkdir()
 	local logdir = "/var/log/podman/" .. lopper.ID
-	Assert(fs.mkdir(logdir), "unable to create logging directory", {
-		directory = logdir,
-	})
+	if not fs.isdir(logdir) then
+		Assert(fs.mkdir(logdir), "unable to create logging directory", {
+			directory = logdir,
+		})
+	end
 	local gj = exec.ctx("journalctl")
 	local cursor
 	do
@@ -373,7 +375,7 @@ E.start = function(c, stats)
 		}
 	end
 	do
-		local jargs = {"-o", "json-pretty", "-u", "c"}
+		local jargs = {"-o", "json-pretty", "-u", c}
 		if cursor then
 			jargs[#jargs+1] = ("--after-cursor=%s"):format(cursor)
 		end
