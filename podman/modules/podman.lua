@@ -182,8 +182,7 @@ local update_hosts = function()
 	)
 end
 E.reserve_idmap = function(id)
-	local ksuid = require("ksuid")
-	id = id or ksuid.new()
+	id = id or lopper.ID
 	local n = 2001234560
 	local max = 2147483647
 	local kv_idmap = bitcask.open("/etc/podman.etcdb/idmap")
@@ -199,13 +198,19 @@ E.reserve_idmap = function(id)
 	kv_idmap:close()
 	Assert((n > max), "Reached maximum possible allocation.", {})
 	Ok("Reserved idmap allocation.", {
-		start = key
+		range = key .. "-" .. tostring(n+65536),
+		mark = id,
 	})
+	return key
 end
 E.release_idmap = function(key)
+	local n = tonumber(key)
 	local kv_idmap = bitcask.open("/etc/podman.etcdb/idmap")
-	local r = kv_idmap:del(key)
+	local r = kv_idmap:delete(key)
 	kv_idmap:close()
+	Ok("Released idmap allocation.", {
+		range = key .. "-" .. tostring(n+65536),
+	})
 	return r
 end
 E.running = function(direct)
@@ -581,6 +586,7 @@ E.config = function(p)
 		ENVIRONMENT = "(table) or JSON file(string) for environment variables.",
 		NETWORK = "private network name.",
 		CMD = "Command line to container.",
+		IDMAP = "uid gid range.",
 		always_update = "Boolean flag, if `true` always pull the image.",
 	}
 	M.param = {} --> from user
@@ -682,6 +688,10 @@ E.config = function(p)
 			end
 			if M.param.NETWORK == "host" then
 				systemd_unit[#systemd_unit + 1] = [[--dns 127.255.255.53 \]]
+			end
+			if M.param.IDMAP then
+				local idmap = [[--uidmap 0:%s:65536 --gidmap 0:%s:65536 \]]
+				systemd_unit[#systemd_unit + 1] = idmap:format(M.param.IDMAP, M.param.IDMAP)
 			end
 			instance.cmd = instance.cmd or ""
 			M.param.CMD = M.param.CMD or instance.cmd
