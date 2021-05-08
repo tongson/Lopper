@@ -4,7 +4,7 @@ local creds = os.getenv("PODMAN_CREDS")
 local systemd_unit_start = {
 	[===[
 [Unit]
-Description=__NAME__ Container
+Description=__CNAME__ Container
 Wants=network.target
 After=network-online.target
 
@@ -33,7 +33,7 @@ RestrictRealtime=yes
 RestrictSUIDSGID=yes
 ProtectKernelTunables=yes
 RestrictAddressFamilies=__ADDRESS_FAMILIES__
-ExecStart=/usr/bin/podman run --name __NAME__ \
+ExecStart=/usr/bin/podman run --name __CNAME__ \
 --security-opt seccomp=/etc/podman.seccomp/__NAME__.json \
 --security-opt apparmor=unconfined \
 --security-opt label=disable \
@@ -366,13 +366,26 @@ local podman_interpolate = function(A)
 			("%s.service"):format(A.param.NAME),
 		})
 	end
-	local fname = ("/etc/systemd/system/%s.service"):format(A.param.NAME)
+	local fname
+	if A.param.NETWORK == "host" then
+		fname = ("/etc/systemd/system/%s.service"):format(A.param.NAME)
+	elseif A.param.NETWORK == "private" then
+		fname = ("/etc/systemd/system/%s.pod.service"):format(A.param.NAME)
+	else
+		fname = ("/etc/systemd/system/%s.service"):format(A.reg.CNAME)
+	end
 	local unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
 	unit, changed = unit:gsub("__NAME__", A.param.NAME)
 	Assert((changed > 1), "unable to interpolate name", {
 		what = "string.gsub",
 		changed = false,
 		to = A.param.NAME,
+	})
+	unit, changed = unit:gsub("__CNAME__", A.reg.CNAME)
+	Assert((changed == 2), "unable to interpolate container name", {
+		what = "string.gsub",
+		changed = false,
+		to = A.reg.NAME,
 	})
 	unit, changed = unit:gsub("__ADDRESS_FAMILIES__", A.reg.address_families)
 	-- Should only match once.
@@ -416,12 +429,12 @@ local podman_interpolate = function(A)
 		changed = false,
 		to = A.param.SHARES,
 	})
-	unit, changed = unit:gsub("__NETWORK__", A.param.NETWORK)
+	unit, changed = unit:gsub("__NETWORK__", A.reg.NETWORK)
 	-- Should only match once.
 	Assert((changed == 1), "unable to interpolate network", {
 		what = "string.gsub",
 		changed = false,
-		to = A.param.NETWORK,
+		to = A.reg.NETWORK,
 	})
 	Assert(fs.write(fname, unit), "unable to write unit", {
 		what = "fs.write",
@@ -558,7 +571,11 @@ E.config = function(p)
 	M.param.SHARES = M.param.SHARES or "1024"
 	M.param.NETWORK = M.param.NETWORK or "host"
 	if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" then
-		M.param.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK))
+		M.reg.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK))
+		M.reg.CNAME = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
+	else
+		M.reg.NETWORK = M.param.NETWORK
+		M.reg.CNAME = M.param.NAME
 	end
 
 	if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
