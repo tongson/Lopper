@@ -181,6 +181,33 @@ local update_hosts = function()
 		{}
 	)
 end
+E.reserve_idmap = function(id)
+	local ksuid = require("ksuid")
+	id = id or ksuid.new()
+	local n = 2001234560
+	local max = 2147483647
+	local kv_idmap = bitcask.open("/etc/podman.etcdb/idmap")
+	local key, ok
+	repeat
+		key = tostring(n)
+		if not kv_idmap:has(key) then
+			ok = kv_idmap:put(key, id)
+		else
+			n = n + 65537
+		end
+	until ok or n > max
+	kv_idmap:close()
+	Assert((n > max), "Reached maximum possible allocation.", {})
+	Ok("Reserved idmap allocation.", {
+		start = key
+	})
+end
+E.release_idmap = function(key)
+	local kv_idmap = bitcask.open("/etc/podman.etcdb/idmap")
+	local r = kv_idmap:del(key)
+	kv_idmap:close()
+	return r
+end
 E.running = function(direct)
 	if not direct then
 		return kv_running:keys()
