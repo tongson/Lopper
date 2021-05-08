@@ -573,6 +573,9 @@ E.config = function(p)
 	if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" then
 		M.reg.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK))
 		M.reg.CNAME = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
+	else if M.param.NETWORK == "private" then
+		M.reg.NETWORK = "private"
+		M.reg.CNAME = ("%s.pod"):format(M.param.NAME)
 	else
 		M.reg.NETWORK = M.param.NETWORK
 		M.reg.CNAME = M.param.NAME
