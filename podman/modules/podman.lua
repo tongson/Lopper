@@ -280,10 +280,10 @@ E.start = function(c, stats)
 			directory = logdir,
 		})
 	end
-	local gj = exec.ctx("journalctl")
+	local journalctl = exec.ctx("journalctl")
 	local cursor
 	do
-		local r, so, se = gj({"-u", c, "-o", "json", "-n", "1"})
+		local r, so, se = journalctl({"-u", c, "-o", "json", "-n", "1"})
 		Assert(r, "unable to get cursor from journalctl", {
 			name = c,
 			stdout = so,
@@ -379,8 +379,10 @@ E.start = function(c, stats)
 		if cursor then
 			jargs[#jargs+1] = ("--after-cursor=%s"):format(cursor)
 		end
-		local _, go = gj(jargs)
+		local _, go = journalctl(jargs)
+		local _, to = systemctl({"status", "-o", "json-pretty", c})
 		fs.write(("%s/%s.journal.json"):format(logdir, c), go)
+		fs.write(("%s/%s.status.json"):format(logdir, c), to)
 		fs.write(("%s/%s.output.json"):format(logdir, c), json.encode(data))
 	end
 	Ok("Started container(service).", data)
