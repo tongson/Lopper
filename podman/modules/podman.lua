@@ -273,6 +273,24 @@ E.stop = function(c)
 	})
 end
 E.start = function(c, stats)
+	fs.mkdir("/var/log/podman") -- Checked in the next mkdir()
+	local logdir = "/var/log/podman/" .. lopper.ID
+	Assert(fs.mkdir(logdir), "unable to create logging directory", {
+		directory = logdir,
+	})
+	local gj = exec.ctx("journalctl")
+	local cursor
+	do
+		local r, so, se = gj({"-u", c, "-o", "json", "-n", "1"})
+		Assert(r, "unable to get cursor from journalctl", {
+			name = c,
+			stdout = so,
+			stderr = se,
+		})
+		local t = json.decode(so)
+		cursor = t["__CURSOR"]
+	end
+
 	local systemctl = exec.ctx("systemctl")
 	local so, se
 	systemctl({"daemon-reload"})
@@ -285,6 +303,7 @@ E.start = function(c, stats)
 			return nil, so, se
 		end
 	end
+	local data
 	if not stats then
 		local cmd = util.retry_f(is_active, 10)
 		Assert(cmd(), "failed starting container", {
@@ -292,9 +311,7 @@ E.start = function(c, stats)
 			stdout = so,
 			stderr = se,
 		})
-		Ok("Started container(service).", {
-			name = c,
-			})
+		data = { name = c }
 	else
 		repeat
 		until is_active()
@@ -348,13 +365,23 @@ E.start = function(c, stats)
 			})
 			os.sleep(stats)
 		end
-		Ok("Container stats.", {
+		data = {
 			name = c,
 			cpu = s.cpu,
 			mem = s.mem,
 			pids = s.pids,
-		})
+		}
 	end
+	do
+		local jargs = {"-o", "json-pretty", "-u", "c"}
+		if cursor then
+			jargs[#jargs+1] = ("--after-cursor=%s"):format(cursor)
+		end
+		local _, go = gj(jargs)
+		fs.write(logdir .. "journal.json", go)
+		fs.write(logdir .. "output.json", json.encode(data))
+	end
+	Ok("Started container(service).", data)
 end
 E.enable = function(c)
 	local systemctl = exec.ctx("systemctl")
