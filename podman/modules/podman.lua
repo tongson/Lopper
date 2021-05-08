@@ -378,8 +378,8 @@ E.start = function(c, stats)
 			jargs[#jargs+1] = ("--after-cursor=%s"):format(cursor)
 		end
 		local _, go = gj(jargs)
-		fs.write(logdir .. "journal.json", go)
-		fs.write(logdir .. "output.json", json.encode(data))
+		fs.write(("%s/%s.journal.json"):format(logdir, c), go)
+		fs.write(("%s/%s.output.json"):format(logdir, c), json.encode(data))
 	end
 	Ok("Started container(service).", data)
 end
