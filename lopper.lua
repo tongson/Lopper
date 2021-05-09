@@ -19,6 +19,12 @@ local Warn = function(msg, tbl)
 	tbl._ksuid = ID
 	stderr:warn(msg, tbl)
 end
+local Debug = function(msg, tbl)
+	local stdout = logger.new("stdout")
+	tbl._ident = DSL
+	tbl._ksuid = ID
+	stdout:debug(msg, tbl)
+end
 local Panic = function(msg, tbl)
 	local trace = function()
 		local frame = 1
@@ -223,6 +229,7 @@ package.preload["lopper"] = function()
 		Panic = Panic,
 		Ok = Ok,
 		Warn = Warn,
+		Debug = Debug,
 		Notify = Notify,
 		ID = ID,
 	}
