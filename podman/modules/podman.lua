@@ -250,6 +250,15 @@ end
 E.volume = get_volume
 local stop = function(T)
 	local c = T.reg.CNAME
+	if T.param.NETWORK == "private" then
+		local ip = exec.ctx("ip")
+		local r1, so1, se1 = ip({"netns", "del", T.param.NAME})
+		Assert(r1, "Unable to delete network.", {
+			netns = T.param.NAME,
+			stdout = so1,
+			stderr = se1,
+		})
+	end
 	local systemctl = exec.ctx("systemctl")
 	local so, se
 	systemctl({ "disable", "--no-block", "--now", c })
@@ -573,6 +582,22 @@ local pull = function(u, t)
 		stderr = se,
 	})
 end
+local create_network = function(name)
+	local ip = exec.ctx("ip")
+	local r1, so1, se1 = ip({"netns", "add", name})
+	Assert(r1, "Unable to create network.", {
+		stdout = so1,
+		stderr = se1,
+	})
+	local nsenter = exec.ctx("nsenter")
+	local path = ("/var/run/netns/%s"):format(name)
+	local r2, so2, se2 = nsenter({"--net=" .. path, "-F", "ip", "link", "set", "lo", "up"})
+	Assert(r2, "Unable to bring up loopback interface within namespace.", {
+		stdout = so2,
+		stderr = se2,
+	})
+	return path
+end
 local assign_ip = function(n, ip)
 	local netdev = dummy_netdev:gsub("__NAME__", n)
 	local network = dummy_network:gsub("__NAME__", n)
@@ -653,7 +678,8 @@ E.config = function(p)
 		M.reg.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK .. ".pod"))
 		M.reg.CNAME = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
 	elseif M.param.NETWORK == "private" then
-		M.reg.NETWORK = "private"
+		local netns = create_network(M.param.NAME)
+		M.reg.NETWORK = "ns:" .. netns
 		M.reg.CNAME = ("%s.pod"):format(M.param.NAME)
 	else
 		M.reg.NETWORK = M.param.NETWORK
