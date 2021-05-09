@@ -1,5 +1,5 @@
 local DSL = "podman"
-local DEBUG = true
+local DEBUG = false
 local domain = os.getenv("PODMAN_DOMAIN") or "host.local"
 local creds = os.getenv("PODMAN_CREDS")
 local systemd_unit_start = {
