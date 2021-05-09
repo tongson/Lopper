@@ -248,7 +248,8 @@ E.ports = function(srv)
 	return json.decode(ports)
 end
 E.volume = get_volume
-E.stop = function(c)
+local stop = function(T)
+	local c = T.reg.CNAME
 	local systemctl = exec.ctx("systemctl")
 	local so, se
 	systemctl({ "disable", "--no-block", "--now", c })
@@ -279,7 +280,8 @@ E.stop = function(c)
 		name = c,
 	})
 end
-E.start = function(c, stats)
+local start = function(T, stats)
+	local c = T.reg.CNAME
 	fs.mkdir("/var/log/podman") -- Checked in the next mkdir()
 	local logdir = "/var/log/podman/" .. lopper.ID
 	if not fs.isdir(logdir) then
@@ -614,6 +616,8 @@ local assign_ip = function(n, ip)
 end
 E.config = function(p)
 	local M = {}
+	M.start = start
+	M.stop = stop
 	local param = {
 		NAME = "Unit name.",
 		BASE = "Base unit.",
@@ -811,5 +815,6 @@ E.config = function(p)
 			network = M.param.NETWORK,
 		})
 	end
+	return M
 end
 return E
