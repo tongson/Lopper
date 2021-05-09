@@ -290,7 +290,9 @@ E.start = function(c, stats)
 			stderr = se,
 		})
 		local t = json.decode(so)
-		cursor = t["__CURSOR"]
+		if type(t) == "table" then
+			cursor = t["__CURSOR"]
+		end
 	end
 
 	local systemctl = exec.ctx("systemctl")
