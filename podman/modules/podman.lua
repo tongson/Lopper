@@ -1,4 +1,5 @@
 local DSL = "podman"
+local DEBUG = true
 local domain = os.getenv("PODMAN_DOMAIN") or "host.local"
 local creds = os.getenv("PODMAN_CREDS")
 local systemd_unit_start = {
@@ -81,6 +82,12 @@ end
 local Warn = function(msg, tbl)
 	tbl._module = DSL
 	return lopper.Warn(msg, tbl)
+end
+local Debug = function(msg, tbl)
+	if DEBUG then
+		tbl._module = DSL
+		return lopper.Debug(msg, tbl)
+	end
 end
 local Assert = function(ret, msg, tbl)
 	if ret == nil then
@@ -637,6 +644,7 @@ E.config = function(p)
 	M.param.IP = M.param.IP or "127.0.0.1"
 	M.param.SHARES = M.param.SHARES or "1024"
 	M.param.NETWORK = M.param.NETWORK or "host"
+	Debug("Figuring out container name...", {})
 	if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" then
 		M.reg.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK .. ".pod"))
 		M.reg.CNAME = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
@@ -647,7 +655,7 @@ E.config = function(p)
 		M.reg.NETWORK = M.param.NETWORK
 		M.reg.CNAME = M.param.NAME
 	end
-
+	Debug("Processing ENVIRONMENT parameter...", {})
 	if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
 		local js = json.decode(fs.read(M.param.ENVIRONMENT))
 		Assert(js, "Invalid JSON.", {
@@ -655,7 +663,6 @@ E.config = function(p)
 		})
 		M.param.ENVIRONMENT = js
 	end
-
 	if M.param.ENVIRONMENT and next(M.param.ENVIRONMENT) then
 		local password = require("password")
 		for k, v in pairs(M.param.ENVIRONMENT) do
@@ -668,7 +675,7 @@ E.config = function(p)
 			end
 		end
 	end
-
+	Debug("Generating systemd unit...", {})
 	local systemd = {}
 	do
 		local reqtry, modul
@@ -737,13 +744,13 @@ E.config = function(p)
 			M.reg.unit = table.concat(systemd_unit, "\n")
 		end
 	end
-
-	-- pull
+	Debug("Pulling image if needed...", {})
 	M.reg.id = id(M.param.URL, M.param.TAG)
 	if M.param.always_update or not M.reg.id then
 		pull(M.param.URL, M.param.TAG)
 		M.reg.id = id(M.param.URL, M.param.TAG)
 	end
+	Debug("Generating systemd-networkd config and assign IP...", {})
 	if M.param.IP and M.param.NETWORK == "host" then --> Generate systemd-networkd config and record IP into etcdb
 		assign_ip(M.param.NAME, M.param.IP)
 		local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
@@ -751,7 +758,8 @@ E.config = function(p)
 			error = ky,
 		})
 	end
-	do --> Generate seccomp profile
+	Debug("Generating seccomp profile...", {})
+	do
 		fs.mkdir("/etc/podman.seccomp")
 		local fn = ("/etc/podman.seccomp/%s.json"):format(M.param.NAME)
 		local default = require("seccomp")
@@ -760,7 +768,12 @@ E.config = function(p)
 			filename = fn,
 		})
 	end
+	Debug("Generating systemd unit...", {})
 	podman_interpolate(M)
+	Assert(fs.isfile("/etc/systemd/system/" .. M.reg.CNAME .. ".service"), "Failed to generate unit.", {
+		unit = M.reg.CNAME .. ".service"
+	})
+	Debug("Start or exit depending of type of container...", {})
 	if M.param.NETWORK == "host" then
 		local systemctl = exec.ctx("systemctl")
 		local so, se
