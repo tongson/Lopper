@@ -1,5 +1,5 @@
 package.path = "./?.lua;modules/?.lua"
-local DSL = "Lopper"
+local DSL = "lopper"
 local ID = require("ksuid").new()
 local json = require("json")
 local util = require("util")
