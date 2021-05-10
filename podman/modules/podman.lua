@@ -189,7 +189,10 @@ E.reserve_idmap = function(id)
 		end
 	until ok or n > max
 	kv_idmap:close()
-	Assert((n > max), "Reached maximum possible allocation.", {})
+	Assert((n > max), "Reached maximum possible allocation.", {
+		what = "reserve_idmap()",
+		idmap = tostring(n),
+	})
 	Ok("Reserved idmap allocation.", {
 		range = key .. "-" .. tostring(n+65536),
 		mark = id,
