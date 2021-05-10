@@ -454,7 +454,7 @@ local podman_interpolate = function(A)
 	elseif A.param.NETWORK == "private" then
 		fname = ("/etc/systemd/system/%s.pod.service"):format(A.param.NAME)
 	else
-		fname = ("/etc/systemd/system/%s.service"):format(A.reg.CNAME)
+		fname = ("/etc/systemd/system/%s.service"):format(A.reg.cname)
 	end
 	local unit, changed
 	if not A.param.ROOT then
@@ -474,7 +474,7 @@ local podman_interpolate = function(A)
 		changed = false,
 		to = A.param.NAME,
 	})
-	unit, changed = unit:gsub("__CNAME__", A.reg.CNAME)
+	unit, changed = unit:gsub("__CNAME__", A.reg.cname)
 	Assert((changed == 4), "Unable to interpolate container name.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
@@ -606,7 +606,7 @@ E.config = function(p)
 	end
 	if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" and M.param.NETWORK ~= "isolated" then
 		M.reg.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK .. ".pod"))
-		M.reg.CNAME = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
+		M.reg.cname = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
 	elseif M.param.NETWORK == "private" or M.param.NETWORK == "isolated" then
 		local netns = ("/var/run/netns/%s"):format(M.param.NAME)
 		Assert((fs.isdir(netns) == nil), "Network namespace already exists.", {
@@ -614,11 +614,11 @@ E.config = function(p)
 			name = M.param.NAME,
 		})
 		M.reg.NETWORK = "ns:" .. netns
-		M.reg.CNAME = ("%s.pod"):format(M.param.NAME)
+		M.reg.cname = ("%s.pod"):format(M.param.NAME)
 	else
 		HOST = true
 		M.reg.NETWORK = M.param.NETWORK
-		M.reg.CNAME = M.param.NAME
+		M.reg.cname = M.param.NAME
 	end
 	Debug("Processing ENVIRONMENT parameter...", {})
 	if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
@@ -768,7 +768,7 @@ E.config = function(p)
 	Debug("Generating seccomp profile...", {})
 	do
 		fs.mkdir("/etc/podman.seccomp")
-		local fn = ("/etc/podman.seccomp/%s.json"):format(M.reg.CNAME)
+		local fn = ("/etc/podman.seccomp/%s.json"):format(M.reg.cname)
 		local default = require("seccomp")
 		local seccomp = json.encode(default)
 		Assert(fs.write(fn, seccomp), "Unable to write seccomp profile.", {
@@ -778,9 +778,9 @@ E.config = function(p)
 	end
 	Debug("Generating systemd unit...", {})
 	podman_interpolate(M)
-	Assert(fs.isfile("/etc/systemd/system/" .. M.reg.CNAME .. ".service"), "Failed to generate unit.", {
+	Assert(fs.isfile("/etc/systemd/system/" .. M.reg.cname .. ".service"), "Failed to generate unit.", {
 		what = "config()",
-		unit = M.reg.CNAME .. ".service"
+		unit = M.reg.cname .. ".service"
 	})
 	Debug("Start or exit depending of type of container...", {})
 	if M.param.NETWORK == "host" then
