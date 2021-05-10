@@ -93,6 +93,7 @@ local get_id = function(n)
 		what = "get_id()",
 		stdout = so,
 		stderr = se,
+		command = "podman inspect",
 		name = n,
 	})
 	local t = json.decode(so)
