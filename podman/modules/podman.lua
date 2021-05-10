@@ -542,9 +542,9 @@ local id = function(u, t)
 		"--format",
 		"json",
 	})
-	Assert(r, "unable to list images", {
-		what = "podman",
-		command = "images",
+	Assert(r, "Unable to list images.", {
+		what = "id()",
+		command = "podman images",
 		stdout = so,
 		stderr = se,
 	})
