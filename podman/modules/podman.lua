@@ -290,8 +290,10 @@ local start = function(T, stats)
 	local cursor
 	do
 		local r, so, se = journalctl({"-u", c, "-o", "json", "-n", "1"})
-		Assert(r, "unable to get cursor from journalctl", {
+		Assert(r, "Unable to get cursor from journalctl.", {
 			name = c,
+			what = "start()",
+			command = "journalctl",
 			stdout = so,
 			stderr = se,
 		})
