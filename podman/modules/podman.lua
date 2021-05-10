@@ -24,16 +24,10 @@ LockPersonality=yes
 NoNewPrivileges=yes
 RemoveIPC=yes
 DevicePolicy=closed
-PrivateTmp=yes
-ProtectKernelModules=yes
-ProtectSystem=full
-ProtectHome=yes
-ProtectKernelLogs=yes
 ProtectClock=yes
 RestrictRealtime=yes
 RestrictSUIDSGID=yes
-ProtectKernelTunables=yes
-RestrictAddressFamilies=__ADDRESS_FAMILIES__
+RestrictAddressFamilies=~AF_INET6
 ExecStart=/usr/bin/podman run --name __CNAME__ \
 --security-opt seccomp=/etc/podman.seccomp/__NAME__.json \
 --security-opt apparmor=unconfined \
@@ -235,15 +229,6 @@ end
 E.volume = get_volume
 local stop = function(T)
 	local c = T.reg.CNAME
-	if T.param.NETWORK == "private" then
-		local ip = exec.ctx("ip")
-		local r1, so1, se1 = ip({"netns", "del", T.param.NAME})
-		Assert(r1, "Unable to delete network.", {
-			netns = T.param.NAME,
-			stdout = so1,
-			stderr = se1,
-		})
-	end
 	local systemctl = exec.ctx("systemctl")
 	local so, se
 	systemctl({ "disable", "--no-block", "--now", c })
@@ -456,13 +441,6 @@ local podman_interpolate = function(A)
 		changed = false,
 		to = A.reg.NAME,
 	})
-	unit, changed = unit:gsub("__ADDRESS_FAMILIES__", A.reg.address_families)
-	-- Should only match once.
-	Assert((changed == 1), "unable to interpolate RestrictAddressFamilies", {
-		what = "string.gsub",
-		changed = false,
-		to = A.param.ADDRESS_FAMILIES,
-	})
 	-- Should only match once.
 	Assert((changed == 1), "unable to interpolate image ID", {
 		what = "string.gsub",
@@ -567,20 +545,6 @@ local pull = function(u, t)
 		stderr = se,
 	})
 end
-local create_network = function(name)
-	local ip = exec.ctx("ip")
-	local r1, so1, se1 = ip({"netns", "add", name})
-	Assert(r1, "Unable to create network.", {
-		stdout = so1,
-		stderr = se1,
-	})
-	local r2, so2, se2 = ip({"netns", "exec", name, "ip", "link", "set", "lo", "up"})
-	Assert(r2, "Unable to bring up loopback interface within namespace.", {
-		stdout = so2,
-		stderr = se2,
-	})
-	return ("/var/run/netns/%s"):format(name)
-end
 E.config = function(p)
 	local M = {}
 	M.start = start
@@ -620,7 +584,10 @@ E.config = function(p)
 		M.reg.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK .. ".pod"))
 		M.reg.CNAME = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
 	elseif M.param.NETWORK == "private" then
-		local netns = create_network(M.param.NAME)
+		local netns = ("/var/run/netns/%s"):format(M.param.NAME)
+		Assert((fs.isdir(netns) == nil), "Network namespace already exists.", {
+			name = M.param.NAME,
+		})
 		M.reg.NETWORK = "ns:" .. netns
 		M.reg.CNAME = ("%s.pod"):format(M.param.NAME)
 	else
@@ -713,7 +680,11 @@ E.config = function(p)
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link add dev %s type dummy"):format(M.param.NAME)
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link set dev %s mtu 65536"):format(M.param.NAME)
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip addr add %s dev %s"):format(M.param.IP, M.param.NAME)
-				su[#su + 1] = ("ExecStopPost=-/usr/sbin/ip link del dev %s"):format(M.param.NAME)
+				su[#su + 1] = ("ExecStopPost=/usr/sbin/ip link del dev %s"):format(M.param.NAME)
+			elseif M.param.NETWORK == "private" then
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns add %s"):format(M.param.NAME)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip link set lo up"):format(M.param.NAME)
+				su[#su + 1] = ("ExecStopPost=/usr/sbin/ip netns del %s"):format(M.param.NAME)
 			end
 			su[#su + 1] = ""
 			su[#su + 1] = "[Install]"
