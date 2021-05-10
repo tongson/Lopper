@@ -684,7 +684,8 @@ E.config = function(p)
 				schema.service_ports:format(M.param.NAME),
 				json.encode(instance.ports)
 			)
-			Assert(kx, "unable to add ports to etcdb", {
+			Assert(kx, "Unable to add ports to etcdb.", {
+				what = "config()",
 				error = ky,
 			})
 		end
