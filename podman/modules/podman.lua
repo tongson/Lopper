@@ -31,7 +31,7 @@ RestrictSUIDSGID=yes
 RestrictAddressFamilies=~AF_INET6
 ExecStopPost=/usr/bin/podman rm -i -v -f __CNAME__
 ExecStart=/usr/bin/podman run --name __CNAME__ \
---security-opt seccomp=/etc/podman.seccomp/__NAME__.json \
+--security-opt seccomp=/etc/podman.seccomp/__CNAME__.json \
 --security-opt apparmor=unconfined \
 --security-opt label=disable \
 --rm \
@@ -443,7 +443,7 @@ local podman_interpolate = function(A)
 		to = A.param.NAME,
 	})
 	unit, changed = unit:gsub("__CNAME__", A.reg.CNAME)
-	Assert((changed == 3), "unable to interpolate container name", {
+	Assert((changed == 4), "unable to interpolate container name", {
 		what = "string.gsub",
 		changed = false,
 		to = A.reg.NAME,
@@ -741,7 +741,7 @@ E.config = function(p)
 	Debug("Generating seccomp profile...", {})
 	do
 		fs.mkdir("/etc/podman.seccomp")
-		local fn = ("/etc/podman.seccomp/%s.json"):format(M.param.NAME)
+		local fn = ("/etc/podman.seccomp/%s.json"):format(M.reg.CNAME)
 		local default = require("seccomp")
 		local seccomp = json.encode(default)
 		Assert(fs.write(fn, seccomp), "unable to write seccomp profile", {
