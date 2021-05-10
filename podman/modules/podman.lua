@@ -132,8 +132,8 @@ local volume = function(vt)
 	for x, y in pairs(vt) do
 		if not found[x] then
 			local ret, so, se = podman({ "volume", "create", x })
-			Assert(ret, "unable to create volume", {
-				what = "podman",
+			Assert(ret, "Unable to create volume.", {
+				what = "volume()",
 				command = "volume create",
 				stdout = so,
 				stderr = se,
