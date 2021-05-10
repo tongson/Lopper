@@ -461,7 +461,7 @@ local podman_interpolate = function(A)
 		unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
 		-- Should only match once.
 		Assert((changed == 1), "unable to interpolate image ID", {
-			what = "string.gsub",
+			what = "podman_interpolate() -> string.gsub()",
 			changed = false,
 			to = A.reg.id,
 		})
