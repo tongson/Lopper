@@ -769,12 +769,14 @@ E.config = function(p)
 	Debug("Assigning IP...", {})
 	if M.param.IP and M.param.NETWORK == "host" then
 		local r = exec.command("ip", { "link", "show", M.param.NAME })
-		Assert((r == nil), "device already exists.", {
+		Assert((r == nil), "Device already exists.", {
+			what = "config()",
 			command = "ip link show",
 			name = M.param.NAME,
 		})
 		local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
-		Assert(kx, "unable to add ip to etcdb", {
+		Assert(kx, "Unable to add ip to etcdb.", {
+			what = "config()",
 			error = ky,
 		})
 	end
@@ -784,13 +786,15 @@ E.config = function(p)
 		local fn = ("/etc/podman.seccomp/%s.json"):format(M.reg.CNAME)
 		local default = require("seccomp")
 		local seccomp = json.encode(default)
-		Assert(fs.write(fn, seccomp), "unable to write seccomp profile", {
+		Assert(fs.write(fn, seccomp), "Unable to write seccomp profile.", {
+			what = "config()",
 			filename = fn,
 		})
 	end
 	Debug("Generating systemd unit...", {})
 	podman_interpolate(M)
 	Assert(fs.isfile("/etc/systemd/system/" .. M.reg.CNAME .. ".service"), "Failed to generate unit.", {
+		what = "config()",
 		unit = M.reg.CNAME .. ".service"
 	})
 	Debug("Start or exit depending of type of container...", {})
@@ -806,14 +810,16 @@ E.config = function(p)
 			end
 		end
 		local cmd = util.retry_f(is_active, 10)
-		Assert(cmd(), "failed starting container", {
+		Assert(cmd(), "Failed starting container.", {
+			what = "config()",
 			name = M.param.NAME,
 			stdout = so,
 			stderr = se,
 		})
 		do --> Record into etcdb
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
-			Assert(kx, "unable to add service to etcdb", {
+			Assert(kx, "Unable to add service to etcdb.", {
+				what = "config()",
 				error = ky,
 			})
 		end
