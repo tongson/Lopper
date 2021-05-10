@@ -592,7 +592,7 @@ E.config = function(p)
 	M.param.IP = M.param.IP or "127.0.0.1"
 	M.param.SHARES = M.param.SHARES or "1024"
 	M.param.NETWORK = M.param.NETWORK or "host"
-	Debug("Figuring out container name...", {})
+	Debug("Figuring out container name and network mode...", {})
 	if type(M.param.NETWORK) == "table" then
 		M.reg.netdata = util.shallowcopy(M.param.NETWORK)
 		M.param.NETWORK = "isolated"
