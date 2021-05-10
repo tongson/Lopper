@@ -639,6 +639,7 @@ E.config = function(p)
 	if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
 		local js = json.decode(fs.read(M.param.ENVIRONMENT))
 		Assert(js, "Invalid JSON.", {
+			what = "config()",
 			file = M.param.ENVIRONMENT
 		})
 		M.param.ENVIRONMENT = js
