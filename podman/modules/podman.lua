@@ -687,6 +687,7 @@ E.config = function(p)
 				su[#su + 1] = [[--dns 127.255.255.53 \]]
 			elseif M.param.NETWORK == "isolated" then
 				su[#su + 1] = [[--dns none \]]
+				su[#su + 1] = [[--no-hosts \]]
 			end
 			if M.param.IDMAP then
 				local idmap = [[--uidmap 0:%s:65536 --gidmap 0:%s:65536 \]]
