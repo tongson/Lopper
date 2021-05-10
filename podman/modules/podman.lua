@@ -53,21 +53,6 @@ local schema = {
 	service_ip = "/%s/ip", --> string
 	service_ports = "/%s/ports", --> list{string}
 }
-local dummy_netdev = [[
-[NetDev]
-Name=__NAME__
-Kind=dummy
-]]
-local dummy_network = [[
-[Match]
-Name=__NAME__
-[Network]
-Address=__IP__/32
-LinkLocalAddressing=no
-IPv6AcceptRA=no
-[Link]
-MTUBytes=65536
-]]
 fs.mkdir("/etc/podman.etcdb")
 local bitcask = require("bitcask")
 local kv_running = bitcask.open("/etc/podman.etcdb/running")
@@ -596,47 +581,6 @@ local create_network = function(name)
 	})
 	return ("/var/run/netns/%s"):format(name)
 end
-local assign_ip = function(n, ip)
-	local netdev = dummy_netdev:gsub("__NAME__", n)
-	local network = dummy_network:gsub("__NAME__", n)
-	network = network:gsub("__IP__", ip)
-	local fnetdev = ("/etc/systemd/network/%s.netdev"):format(n)
-	local fnetwork = ("/etc/systemd/network/%s.network"):format(n)
-	Assert(fs.write(fnetdev, netdev), "unable to write .netdev configuration", {
-		what = "dummy network",
-		file = fnetdev,
-	})
-	Assert(
-		fs.write(fnetwork, network),
-		"unable to write .network configuration",
-		{
-			what = "dummy network",
-			file = fnetwork,
-		}
-	)
-	local systemctl = exec.ctx("systemctl")
-	systemctl({ "restart", "systemd-networkd" })
-	local netcheck = function(wh)
-		local ipargs = { "-j", "addr", "show", "dev", n }
-		local ipcmd = util.retry_f(exec.ctx("ip"))
-		local ret, so, se = ipcmd(ipargs)
-		Assert(ret, "failure running ip command", {
-			command = "ip addr show",
-			stdout = so,
-			stderr = se,
-		})
-		return table.find(json.decode(so), wh)
-	end
-	local ifcheck = util.retry_f(netcheck)
-	Assert(ifcheck(n), "ifname did not match", {
-		expected = n,
-	})
-	local ipcheck = util.retry_f(netcheck)
-	Assert(ipcheck(ip), "local IP did not match", {
-		expected = ip,
-	})
-	return ip
-end
 E.config = function(p)
 	local M = {}
 	M.start = start
@@ -739,37 +683,43 @@ E.config = function(p)
 		if instance.unit then
 			M.reg.unit = instance.unit
 		else
-			local systemd_unit = util.shallowcopy(systemd_unit_start)
+			local su = util.shallowcopy(systemd_unit_start)
 			if instance.capabilities and next(instance.capabilities) then
 				for _, c in ipairs(instance.capabilities) do
-					systemd_unit[#systemd_unit + 1] = ([[--cap-add %s \]]):format(c)
+					su[#su + 1] = ([[--cap-add %s \]]):format(c)
 				end
 			end
 			if M.param.ENVIRONMENT then
 				for k, v in pairs(M.param.ENVIRONMENT) do
-					systemd_unit[#systemd_unit + 1] = ([[-e "%s=%s" \]]):format(k, v)
+					su[#su + 1] = ([[-e "%s=%s" \]]):format(k, v)
 				end
 			end
 			if instance.mounts and next(instance.mounts) then
 				for k, v in pairs(instance.mounts) do
-					systemd_unit[#systemd_unit + 1] = ([[--volume %s:%s \]]):format(k, v)
+					su[#su + 1] = ([[--volume %s:%s \]]):format(k, v)
 				end
 			end
 			if M.param.NETWORK == "host" then
-				systemd_unit[#systemd_unit + 1] = [[--dns 127.255.255.53 \]]
+				su[#su + 1] = [[--dns 127.255.255.53 \]]
 			end
 			if M.param.IDMAP then
 				local idmap = [[--uidmap 0:%s:65536 --gidmap 0:%s:65536 \]]
-				systemd_unit[#systemd_unit + 1] = idmap:format(M.param.IDMAP, M.param.IDMAP)
+				su[#su + 1] = idmap:format(M.param.IDMAP, M.param.IDMAP)
 			end
 			instance.cmd = instance.cmd or ""
 			M.param.CMD = M.param.CMD or instance.cmd
-			systemd_unit[#systemd_unit + 1] = ("__ID__ %s"):format(M.param.CMD)
-			systemd_unit[#systemd_unit + 1] = ""
-			systemd_unit[#systemd_unit + 1] = "[Install]"
-			systemd_unit[#systemd_unit + 1] = "WantedBy=multi-user.target"
-			systemd_unit[#systemd_unit + 1] = ""
-			M.reg.unit = table.concat(systemd_unit, "\n")
+			su[#su + 1] = ("__ID__ %s"):format(M.param.CMD)
+			if M.param.NETWORK == "host" and M.param.IP ~= "127.0.0.1" then
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link add dev %s type dummy"):format(M.param.NAME)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link set dev %s mtu 65536"):format(M.param.NAME)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip addr add %s dev %s"):format(M.param.IP, M.param.NAME)
+				su[#su + 1] = ("ExecStopPost=-/usr/sbin/ip link del dev %s"):format(M.param.NAME)
+			end
+			su[#su + 1] = ""
+			su[#su + 1] = "[Install]"
+			su[#su + 1] = "WantedBy=multi-user.target"
+			su[#su + 1] = ""
+			M.reg.unit = table.concat(su, "\n")
 		end
 	end
 	Debug("Pulling image if needed...", {})
@@ -778,9 +728,13 @@ E.config = function(p)
 		pull(M.param.URL, M.param.TAG)
 		M.reg.id = id(M.param.URL, M.param.TAG)
 	end
-	Debug("Generating systemd-networkd config and assign IP...", {})
-	if M.param.IP and M.param.NETWORK == "host" then --> Generate systemd-networkd config and record IP into etcdb
-		assign_ip(M.param.NAME, M.param.IP)
+	Debug("Assigning IP...", {})
+	if M.param.IP and M.param.NETWORK == "host" then
+		local r = exec.command("ip", { "link", "show", M.param.NAME })
+		Assert((r == nil), "device already exists.", {
+			command = "ip link show",
+			name = M.param.NAME,
+		})
 		local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
 		Assert(kx, "unable to add ip to etcdb", {
 			error = ky,
