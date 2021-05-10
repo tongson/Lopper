@@ -580,10 +580,14 @@ E.config = function(p)
 	M.param.SHARES = M.param.SHARES or "1024"
 	M.param.NETWORK = M.param.NETWORK or "host"
 	Debug("Figuring out container name...", {})
-	if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" then
+	if type(M.param.NETWORK) == "table" then
+		M.reg.NETDATA = util.shallowcopy(M.param.NETWORK)
+		M.param.NETWORK = "isolated"
+	end
+	if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" and M.param.NETWORK ~= "isolated" then
 		M.reg.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK .. ".pod"))
 		M.reg.CNAME = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
-	elseif M.param.NETWORK == "private" then
+	elseif M.param.NETWORK == "private" or M.param.NETWORK == "isolated" then
 		local netns = ("/var/run/netns/%s"):format(M.param.NAME)
 		Assert((fs.isdir(netns) == nil), "Network namespace already exists.", {
 			name = M.param.NAME,
@@ -677,14 +681,29 @@ E.config = function(p)
 			M.param.CMD = M.param.CMD or instance.cmd
 			su[#su + 1] = ("__ID__ %s"):format(M.param.CMD)
 			if M.param.NETWORK == "host" and M.param.IP ~= "127.0.0.1" then
-				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link add dev %s type dummy"):format(M.param.NAME)
-				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link set dev %s mtu 65536"):format(M.param.NAME)
-				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip addr add %s dev %s"):format(M.param.IP, M.param.NAME)
-				su[#su + 1] = ("ExecStopPost=/usr/sbin/ip link del dev %s"):format(M.param.NAME)
+				local n = M.param.NAME
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link add dev %s type dummy"):format(n)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link set dev %s mtu 65536"):format(n)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip addr add %s dev %s"):format(M.param.IP, n)
+				su[#su + 1] = ("ExecStopPost=/usr/sbin/ip link del dev %s"):format(n)
 			elseif M.param.NETWORK == "private" then
-				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns add %s"):format(M.param.NAME)
-				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip link set lo up"):format(M.param.NAME)
-				su[#su + 1] = ("ExecStopPost=/usr/sbin/ip netns del %s"):format(M.param.NAME)
+				local n = M.param.NAME
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns add %s"):format(n)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip link set lo up"):format(n)
+				su[#su + 1] = ("ExecStopPost=/usr/sbin/ip netns del %s"):format(n)
+			elseif M.param.NETWORK == "isolated" then
+				local nm = M.param.NAME
+				local pa = M.reg.NETDATA.interface
+				local de = M.reg.NETDATA.gateway
+				local ip = M.reg.NETDATA.address
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns add %s"):format(nm)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link add link %s lan0 type ipvlan mode l2"):format(pa)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link set lan0 netns %s"):format(nm)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip link set lan0 up"):format(nm)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip link set lo up"):format(nm)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip addr add %s dev lan0"):format(nm, ip)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip route add default via %s dev lan0"):format(nm, de)
+				su[#su + 1] = ("ExecStopPost=/usr/sbin/ip netns del %s"):format(nm)
 			end
 			su[#su + 1] = ""
 			su[#su + 1] = "[Install]"
