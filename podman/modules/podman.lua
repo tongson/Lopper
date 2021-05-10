@@ -1,5 +1,6 @@
 local DSL = "podman"
 local DEBUG = false
+local HOST = false
 local domain = os.getenv("PODMAN_DOMAIN") or "host.local"
 local creds = os.getenv("PODMAN_CREDS")
 local systemd_unit_start = {
@@ -255,7 +256,9 @@ local stop = function(T)
 			name = c,
 		})
 	end
-	update_hosts()
+	if HOST then
+		update_hosts()
+	end
 	Ok("Stopped container(service).", {
 		name = c,
 	})
@@ -406,7 +409,9 @@ E.enable = function(c)
 			name = c,
 		})
 	end
-	update_hosts()
+	if HOST then
+		update_hosts()
+	end
 	Ok("Started container(service).", {
 		name = c,
 	})
@@ -596,6 +601,7 @@ E.config = function(p)
 		M.reg.NETWORK = "ns:" .. netns
 		M.reg.CNAME = ("%s.pod"):format(M.param.NAME)
 	else
+		HOST = true
 		M.reg.NETWORK = M.param.NETWORK
 		M.reg.CNAME = M.param.NAME
 	end
