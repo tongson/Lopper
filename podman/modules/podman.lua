@@ -281,7 +281,8 @@ local start = function(T, stats)
 	fs.mkdir("/var/log/podman") -- Checked in the next mkdir()
 	local logdir = "/var/log/podman/" .. lopper.ID
 	if not fs.isdir(logdir) then
-		Assert(fs.mkdir(logdir), "unable to create logging directory", {
+		Assert(fs.mkdir(logdir), "Unable to create logging directory.", {
+			what = "start()",
 			directory = logdir,
 		})
 	end
