@@ -228,6 +228,7 @@ E.ports = function(srv)
 end
 E.volume = get_volume
 local stop = function(T)
+	-- Does removal from kv_running etcdb and updates dns hosts.
 	local c = T.reg.CNAME
 	local systemctl = exec.ctx("systemctl")
 	local so, se
