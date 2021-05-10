@@ -478,7 +478,7 @@ local podman_interpolate = function(A)
 	Assert((changed == 4), "Unable to interpolate container name.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
-		to = A.reg.NAME,
+		to = A.reg.name,
 	})
 	if unit:contains("__IP__") then
 		unit, changed = unit:gsub("__IP__", A.param.IP)
@@ -605,7 +605,7 @@ E.config = function(p)
 		M.param.NETWORK = "isolated"
 	end
 	if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" and M.param.NETWORK ~= "isolated" then
-		M.reg.NETWORK = ("container:%s"):format(get_id(M.param.NETWORK .. ".pod"))
+		M.reg.network = ("container:%s"):format(get_id(M.param.NETWORK .. ".pod"))
 		M.reg.cname = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
 	elseif M.param.NETWORK == "private" or M.param.NETWORK == "isolated" then
 		local netns = ("/var/run/netns/%s"):format(M.param.NAME)
@@ -613,11 +613,11 @@ E.config = function(p)
 			what = "config()",
 			name = M.param.NAME,
 		})
-		M.reg.NETWORK = "ns:" .. netns
+		M.reg.network = "ns:" .. netns
 		M.reg.cname = ("%s.pod"):format(M.param.NAME)
 	else
 		HOST = true
-		M.reg.NETWORK = M.param.NETWORK
+		M.reg.network = M.param.NETWORK
 		M.reg.cname = M.param.NAME
 	end
 	Debug("Processing ENVIRONMENT parameter...", {})
