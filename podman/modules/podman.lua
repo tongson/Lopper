@@ -435,7 +435,18 @@ local podman_interpolate = function(A)
 	else
 		fname = ("/etc/systemd/system/%s.service"):format(A.reg.CNAME)
 	end
-	local unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
+	local unit, changed
+	if not A.param.ROOT then
+		unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
+		-- Should only match once.
+		Assert((changed == 1), "unable to interpolate image ID", {
+			what = "string.gsub",
+			changed = false,
+			to = A.reg.id,
+		})
+	else
+		unit = A.reg.unit
+	end
 	unit, changed = unit:gsub("__NAME__", A.param.NAME)
 	Assert((changed > 1), "unable to interpolate name", {
 		what = "string.gsub",
@@ -447,12 +458,6 @@ local podman_interpolate = function(A)
 		what = "string.gsub",
 		changed = false,
 		to = A.reg.NAME,
-	})
-	-- Should only match once.
-	Assert((changed == 1), "unable to interpolate image ID", {
-		what = "string.gsub",
-		changed = false,
-		to = A.reg.id,
 	})
 	if unit:contains("__IP__") then
 		unit, changed = unit:gsub("__IP__", A.param.IP)
@@ -570,6 +575,7 @@ E.config = function(p)
 		NETWORK = "private network name.",
 		CMD = "Command line to container.",
 		IDMAP = "uid gid range.",
+		ROOT = "Root directory instance of a container image.",
 		always_update = "Boolean flag, if `true` always pull the image.",
 	}
 	M.param = {} --> from user
@@ -687,7 +693,11 @@ E.config = function(p)
 			end
 			instance.cmd = instance.cmd or ""
 			M.param.CMD = M.param.CMD or instance.cmd
-			su[#su + 1] = ("__ID__ %s"):format(M.param.CMD)
+			if not M.param.ROOT then
+				su[#su + 1] = ("__ID__ %s"):format(M.param.CMD)
+			else
+				su[#su + 1] = ("--rootfs %s %s"):format(M.param.ROOT, M.param.CMD)
+			end
 			if M.param.NETWORK == "host" and M.param.IP ~= "127.0.0.1" then
 				local n = M.param.NAME
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link add dev %s type dummy"):format(n)
@@ -702,15 +712,17 @@ E.config = function(p)
 			elseif M.param.NETWORK == "isolated" then
 				local nm = M.param.NAME
 				local pa = M.reg.NETDATA.interface
-				local de = M.reg.NETDATA.gateway
+				local de = M.reg.NETDATA.gateway or ""
 				local ip = M.reg.NETDATA.address
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns add %s"):format(nm)
-				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link add link %s lan0 type ipvlan mode l2"):format(pa)
+				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link add link %s lan0 type macvlan mode bridge"):format(pa)
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link set lan0 netns %s"):format(nm)
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip link set lan0 up"):format(nm)
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip link set lo up"):format(nm)
-				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip addr add %s dev lan0"):format(nm, ip)
-				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip route add default via %s dev lan0"):format(nm, de)
+				if ip ~= "dhcp" then
+					su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip addr add %s dev lan0"):format(nm, ip)
+					su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip route add default via %s dev lan0"):format(nm, de)
+				end
 				su[#su + 1] = ("ExecStopPost=/usr/sbin/ip netns del %s"):format(nm)
 			end
 			su[#su + 1] = ""
@@ -721,10 +733,12 @@ E.config = function(p)
 		end
 	end
 	Debug("Pulling image if needed...", {})
-	M.reg.id = id(M.param.URL, M.param.TAG)
-	if M.param.always_update or not M.reg.id then
-		pull(M.param.URL, M.param.TAG)
+	if not M.param.ROOT then
 		M.reg.id = id(M.param.URL, M.param.TAG)
+		if M.param.always_update or not M.reg.id then
+			pull(M.param.URL, M.param.TAG)
+			M.reg.id = id(M.param.URL, M.param.TAG)
+		end
 	end
 	Debug("Assigning IP...", {})
 	if M.param.IP and M.param.NETWORK == "host" then
