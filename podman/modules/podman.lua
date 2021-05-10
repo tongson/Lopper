@@ -215,7 +215,8 @@ E.running = function(direct)
 	end
 	-- Not from the etcdb but directly from podman
 	local r, so, se = podman({ "ps", "-a", "--format", "json" })
-	Assert(r, "failure running podman command", {
+	Assert(r, "Failure running podman command.", {
+		what = "running().",
 		command = "podman ps",
 		stdout = so,
 		stderr = se,
