@@ -520,21 +520,6 @@ local podman_interpolate = function(A)
 		what = "podman_interpolate() -> fs.write()",
 		file = fname,
 	})
-	if A.param.NETWORK == "host" then
-		local r, so, se = systemctl({
-			"enable",
-			"--no-block",
-			"--now",
-			("%s.service"):format(A.param.NAME),
-		})
-		Assert(r, "Unable to start service.", {
-			what = "podman_intepolate()",
-			command = "systemctl enable",
-			service = A.param.NAME,
-			stdout = so,
-			stderr = se,
-		})
-	end
 end
 local id = function(u, t)
 	local r, so, se = podman({
@@ -800,7 +785,20 @@ E.config = function(p)
 	Debug("Start or exit depending of type of container...", {})
 	if M.param.NETWORK == "host" then
 		local systemctl = exec.ctx("systemctl")
-		local so, se
+		local r, so, se
+		r, so, se = systemctl({
+			"enable",
+			"--no-block",
+			"--now",
+			("%s.service"):format(M.param.NAME),
+		})
+		Assert(r, "Unable to start service.", {
+			what = "config()",
+			command = "systemctl enable",
+			service = M.param.NAME,
+			stdout = so,
+			stderr = se,
+		})
 		local is_active = function()
 			_, so, se = systemctl({ "is-active", M.param.NAME })
 			if so == "active\n" then
