@@ -29,6 +29,7 @@ ProtectClock=yes
 RestrictRealtime=yes
 RestrictSUIDSGID=yes
 RestrictAddressFamilies=~AF_INET6
+ExecStopPost=/usr/bin/podman rm -i -v -f __CNAME__
 ExecStart=/usr/bin/podman run --name __CNAME__ \
 --security-opt seccomp=/etc/podman.seccomp/__NAME__.json \
 --security-opt apparmor=unconfined \
@@ -442,7 +443,7 @@ local podman_interpolate = function(A)
 		to = A.param.NAME,
 	})
 	unit, changed = unit:gsub("__CNAME__", A.reg.CNAME)
-	Assert((changed == 2), "unable to interpolate container name", {
+	Assert((changed == 3), "unable to interpolate container name", {
 		what = "string.gsub",
 		changed = false,
 		to = A.reg.NAME,
