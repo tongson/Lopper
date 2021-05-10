@@ -351,6 +351,7 @@ local start = function(T, stats)
 			until type(x) == "table" or tt == 10
 			if tt == 10 then
 				Assert(nil, "Did not return a valid output.", {
+					what = "start()",
 					name = c,
 					command = "podman stats",
 				})
