@@ -144,8 +144,8 @@ local volume = function(vt)
 		if type(y) == "table" then
 			for _, cmd in ipairs(y) do
 				local ret, so, se = sh({ "-c", cmd:gsub("__MOUNTPOINT__", mountpoint) })
-				Assert(ret, "error executing volume command", {
-					what = "sh",
+				Assert(ret, "Failure executing volume command", {
+					what = "volume()",
 					command = "volume ls",
 					stdout = so,
 					stderr = se,
