@@ -625,6 +625,7 @@ E.config = function(p)
 	elseif M.param.NETWORK == "private" or M.param.NETWORK == "isolated" then
 		local netns = ("/var/run/netns/%s"):format(M.param.NAME)
 		Assert((fs.isdir(netns) == nil), "Network namespace already exists.", {
+			what = "config()",
 			name = M.param.NAME,
 		})
 		M.reg.NETWORK = "ns:" .. netns
