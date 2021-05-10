@@ -603,6 +603,7 @@ E.config = function(p)
 	M.reg = {} --> generated
 	for k in pairs(p) do
 		Assert(param[k], "Invalid parameter given.", {
+			what = "config()",
 			parameter = k,
 		})
 		M.param[k] = p[k]
