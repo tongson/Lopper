@@ -427,7 +427,8 @@ E.enable = function(c)
 			local try = util.retry_f(kv_running.put)
 			local added = try(kv_running, c)
 			kv_running:close()
-			Assert(added, "unable to add container to etcdb/running", {
+			Assert(added, "Unable to add container to etcdb/running", {
+				what = "enable() -> put()",
 				name = c,
 			})
 		end
