@@ -686,8 +686,7 @@ E.config = function(p)
 			end
 			if M.param.NETWORK == "host" then
 				su[#su + 1] = [[--dns 127.255.255.53 \]]
-			end
-			if M.param.NETWORK == "isolated" then
+			elseif M.param.NETWORK == "isolated" then
 				su[#su + 1] = [[--dns none \]]
 			end
 			if M.param.IDMAP then
