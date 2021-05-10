@@ -253,7 +253,9 @@ local stop = function(T)
 		end
 	end
 	local cmd = util.retry_f(is_inactive, 10)
-	Assert(cmd(), "failed stopping container", {
+	Assert(cmd(), "Failed stopping container.", {
+		what = "stop()",
+		command = "systemctl is-active",
 		name = c,
 		stdout = so,
 		stderr = se,
