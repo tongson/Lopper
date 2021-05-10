@@ -589,14 +589,12 @@ local create_network = function(name)
 		stdout = so1,
 		stderr = se1,
 	})
-	local nsenter = exec.ctx("nsenter")
-	local path = ("/var/run/netns/%s"):format(name)
-	local r2, so2, se2 = nsenter({"--net=" .. path, "-F", "ip", "link", "set", "lo", "up"})
+	local r2, so2, se2 = ip({"netns", "exec", name, "ip", "link", "set", "lo", "up"})
 	Assert(r2, "Unable to bring up loopback interface within namespace.", {
 		stdout = so2,
 		stderr = se2,
 	})
-	return path
+	return ("/var/run/netns/%s"):format(name)
 end
 local assign_ip = function(n, ip)
 	local netdev = dummy_netdev:gsub("__NAME__", n)
