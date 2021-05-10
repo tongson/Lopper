@@ -248,15 +248,15 @@ local stop = function(T)
 		stdout = so,
 		stderr = se,
 	})
-	if kv_running:has(c) then
-		local try = util.retry_f(kv_running.delete)
-		local deleted = try(kv_running, c)
-		kv_running:close()
-		Assert(deleted, "unable to remove container from etcdb/running", {
-			name = c,
-		})
-	end
 	if HOST then
+		if kv_running:has(c) then
+			local try = util.retry_f(kv_running.delete)
+			local deleted = try(kv_running, c)
+			kv_running:close()
+			Assert(deleted, "unable to remove container from etcdb/running", {
+				name = c,
+			})
+		end
 		update_hosts()
 	end
 	Ok("Stopped container(service).", {
@@ -401,15 +401,15 @@ E.enable = function(c)
 		stdout = so,
 		stderr = se,
 	})
-	if not kv_running:has(c) then
-		local try = util.retry_f(kv_running.put)
-		local added = try(kv_running, c)
-		kv_running:close()
-		Assert(added, "unable to add container to etcdb/running", {
-			name = c,
-		})
-	end
 	if HOST then
+		if not kv_running:has(c) then
+			local try = util.retry_f(kv_running.put)
+			local added = try(kv_running, c)
+			kv_running:close()
+			Assert(added, "unable to add container to etcdb/running", {
+				name = c,
+			})
+		end
 		update_hosts()
 	end
 	Ok("Started container(service).", {
