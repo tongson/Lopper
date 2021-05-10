@@ -415,7 +415,9 @@ E.enable = function(c)
 		end
 	end
 	local cmd = util.retry_f(is_active, 10)
-	Assert(cmd(), "failed starting container", {
+	Assert(cmd(), "Failed starting container.", {
+		what = "enable()",
+		command = "systemctl enable",
 		name = c,
 		stdout = so,
 		stderr = se,
