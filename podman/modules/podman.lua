@@ -527,9 +527,9 @@ local podman_interpolate = function(A)
 			"--now",
 			("%s.service"):format(A.param.NAME),
 		})
-		Assert(r, "unable to start service", {
-			what = "systemctl",
-			command = "enable",
+		Assert(r, "Unable to start service.", {
+			what = "podman_intepolate()",
+			command = "systemctl enable",
 			service = A.param.NAME,
 			stdout = so,
 			stderr = se,
