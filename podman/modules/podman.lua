@@ -594,7 +594,7 @@ E.config = function(p)
 	M.param.NETWORK = M.param.NETWORK or "host"
 	Debug("Figuring out container name...", {})
 	if type(M.param.NETWORK) == "table" then
-		M.reg.NETDATA = util.shallowcopy(M.param.NETWORK)
+		M.reg.netdata = util.shallowcopy(M.param.NETWORK)
 		M.param.NETWORK = "isolated"
 	end
 	if M.param.NETWORK ~= "host" and M.param.NETWORK ~= "private" and M.param.NETWORK ~= "isolated" then
@@ -711,9 +711,9 @@ E.config = function(p)
 				su[#su + 1] = ("ExecStopPost=/usr/sbin/ip netns del %s"):format(n)
 			elseif M.param.NETWORK == "isolated" then
 				local nm = M.param.NAME
-				local pa = M.reg.NETDATA.interface
-				local de = M.reg.NETDATA.gateway or ""
-				local ip = M.reg.NETDATA.address
+				local pa = M.reg.netdata.interface
+				local de = M.reg.netdata.gateway or ""
+				local ip = M.reg.netdata.address
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns add %s"):format(nm)
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link add link %s lan0 type macvlan mode bridge"):format(pa)
 				su[#su + 1] = ("ExecStartPre=/usr/sbin/ip link set lan0 netns %s"):format(nm)
