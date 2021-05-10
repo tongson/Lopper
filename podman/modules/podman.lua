@@ -90,6 +90,7 @@ local get_id = function(n)
 			n,
 		})
 	Assert(r, "Unable to find container.", {
+		what = "get_id()",
 		stdout = so,
 		stderr = se,
 		name = n,
