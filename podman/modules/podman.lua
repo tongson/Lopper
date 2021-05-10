@@ -569,9 +569,9 @@ local pull = function(u, t)
 		table.insert(pt, 2, "--creds")
 	end
 	local r, so, se = podman(pt)
-	Assert(r, "unable to pull image", {
-		what = "podman",
-		command = "pull",
+	Assert(r, "Unable to pull image.", {
+		what = "pull()",
+		command = "podman pull",
 		url = u,
 		tag = t,
 		stdout = so,
