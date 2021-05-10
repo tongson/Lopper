@@ -460,7 +460,7 @@ local podman_interpolate = function(A)
 	if not A.param.ROOT then
 		unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
 		-- Should only match once.
-		Assert((changed == 1), "unable to interpolate image ID", {
+		Assert((changed == 1), "Unable to interpolate image ID.", {
 			what = "podman_interpolate() -> string.gsub()",
 			changed = false,
 			to = A.reg.id,
@@ -469,20 +469,20 @@ local podman_interpolate = function(A)
 		unit = A.reg.unit
 	end
 	unit, changed = unit:gsub("__NAME__", A.param.NAME)
-	Assert((changed > 1), "unable to interpolate name", {
+	Assert((changed > 1), "Unable to interpolate name.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.NAME,
 	})
 	unit, changed = unit:gsub("__CNAME__", A.reg.CNAME)
-	Assert((changed == 4), "unable to interpolate container name", {
+	Assert((changed == 4), "Unable to interpolate container name.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.reg.NAME,
 	})
 	if unit:contains("__IP__") then
 		unit, changed = unit:gsub("__IP__", A.param.IP)
-		Assert((changed >= 1), "unable to interpolate IP", {
+		Assert((changed >= 1), "Unable to interpolate IP.", {
 			what = "podman_interpolate() -> string.gsub()",
 			changed = false,
 			to = A.param.IP,
@@ -490,33 +490,33 @@ local podman_interpolate = function(A)
 	end
 	unit, changed = unit:gsub("__CPUS__", A.param.CPUS)
 	-- Should only match once.
-	Assert((changed == 1), "unable to interpolate cpuset-cpus", {
+	Assert((changed == 1), "Unable to interpolate --cpuset-cpus.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.CPUS,
 	})
 	unit, changed = unit:gsub("__MEM__", A.param.MEM)
 	-- Should only match once.
-	Assert((changed == 1), "unable to interpolate memory", {
+	Assert((changed == 1), "Unable to interpolate --memory.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.MEM,
 	})
 	unit, changed = unit:gsub("__SHARES__", A.param.SHARES)
 	-- Should only match once.
-	Assert((changed == 1), "unable to interpolate cpu-shares", {
+	Assert((changed == 1), "Unable to interpolate --cpu-shares.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.SHARES,
 	})
 	unit, changed = unit:gsub("__NETWORK__", A.reg.NETWORK)
 	-- Should only match once.
-	Assert((changed == 1), "unable to interpolate network", {
+	Assert((changed == 1), "Unable to interpolate --network.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.reg.NETWORK,
 	})
-	Assert(fs.write(fname, unit), "unable to write unit", {
+	Assert(fs.write(fname, unit), "Unable to write unit.", {
 		what = "podman_interpolate() -> fs.write()",
 		file = fname,
 	})
