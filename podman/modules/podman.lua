@@ -831,7 +831,7 @@ E.config = function(p)
 		})
 	else
 		Ok("Container setup done.", {
-			name = M.param.NAME,
+			name = M.param.CNAME,
 			network = M.param.NETWORK,
 		})
 	end
