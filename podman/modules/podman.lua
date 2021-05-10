@@ -168,8 +168,10 @@ local update_hosts = function()
 	local hosts_file = table.concat(hosts, "\n")
 	Assert(
 		fs.write(dns_config .. "/hosts", hosts_file),
-		"unable to write system HOSTS file",
-		{}
+		"Unable to write system HOSTS file",
+		{
+			what = "update_hosts()",
+		}
 	)
 end
 E.reserve_idmap = function(id)
