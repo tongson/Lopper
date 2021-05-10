@@ -664,7 +664,6 @@ E.config = function(p)
 				error = ky,
 			})
 		end
-		M.reg.address_families = instance.address_families or "AF_INET"
 		if instance.unit then
 			M.reg.unit = instance.unit
 		else
