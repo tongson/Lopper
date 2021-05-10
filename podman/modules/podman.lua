@@ -105,7 +105,7 @@ local get_volume = function(n)
 		"--all",
 	})
 	Assert(ret, "Failure listing volumes", {
-		what = "podman",
+		what = "get_volume()",
 		command = "volume inspect",
 		stdout = so,
 		stderr = se,
