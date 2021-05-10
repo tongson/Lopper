@@ -575,7 +575,7 @@ E.config = function(p)
 		NETWORK = "private network name.",
 		CMD = "Command line to container.",
 		IDMAP = "uid gid range.",
-		ROOT = "Root directory instance of a container image.",
+		ROOT = "Root directory hierarchy of a container.",
 		always_update = "Boolean flag, if `true` always pull the image.",
 	}
 	M.param = {} --> from user
