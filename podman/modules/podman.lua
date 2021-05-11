@@ -400,43 +400,6 @@ local start = function(T, stats)
 	end
 	OK("Started container(service).", data)
 end
-local Enable = function(c)
-	local systemctl = exec.ctx("systemctl")
-	local so, se
-	systemctl({"daemon-reload"})
-	systemctl({ "enable", "--no-block", "--now", c })
-	local is_active = function()
-		_, so, se = systemctl({ "is-active", c })
-		if so == "active\n" then
-			return true
-		else
-			return nil, so, se
-		end
-	end
-	local cmd = util.retry_f(is_active, 10)
-	ASSERT(cmd(), "Failed starting container. Check the unit journal.", {
-		fn = "enable()",
-		command = "systemctl enable",
-		name = c,
-		stdout = so,
-		stderr = se,
-	})
-	if HOST then
-		if not kv_running:has(c) then
-			local try = util.retry_f(kv_running.put)
-			local added = try(kv_running, c)
-			kv_running:close()
-			ASSERT(added, "Host problem? Unable to add container to etcdb/running", {
-				fn = "enable() -> put()",
-				name = c,
-			})
-		end
-		update_hosts()
-	end
-	OK("Started container(service).", {
-		name = c,
-	})
-end
 local podman_interpolate = function(A)
 	local systemctl = exec.ctx("systemctl")
 	if A.param.NETWORK == "host" then
@@ -843,7 +806,6 @@ local Config = function(p)
 end
 return {
 	config = Config,
-	enable = Enable,
 	get_volume = Get_Volume,
 	ports = Ports,
 	running = Running,
