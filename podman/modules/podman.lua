@@ -554,7 +554,7 @@ local pull = function(u, t)
 		table.insert(pt, 2, "--creds")
 	end
 	local r, so, se = podman(pt)
-	ASSERT(r, "Unable to pull image.", {
+	ASSERT(r, "Network or host problem? Unable to pull image.", {
 		fn = "pull()",
 		command = "podman pull",
 		url = u,
