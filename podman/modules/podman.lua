@@ -265,7 +265,7 @@ local stop = function(T)
 			local try = util.retry_f(kv_running.delete)
 			local deleted = try(kv_running, c)
 			kv_running:close()
-			ASSERT(deleted, "Unable to remove container from etcdb/running.", {
+			ASSERT(deleted, "Host problem? Unable to remove container from etcdb/running.", {
 				fn = "stop()",
 				name = c,
 			})
