@@ -57,6 +57,7 @@ local kv_service = bitcask.open("/etc/podman.etcdb/service")
 local lopper = require("lopper")
 local json = require("json")
 local util = require("util")
+local type = type
 local OK = function(msg, tbl)
 	tbl._module = DSL
 	return lopper.ok(msg, tbl)
