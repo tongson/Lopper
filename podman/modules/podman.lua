@@ -771,7 +771,7 @@ E.config = function(p)
 		local fn = ("/etc/podman.seccomp/%s.json"):format(M.reg.cname)
 		local default = require("seccomp")
 		local seccomp = json.encode(default)
-		ASSERT(fs.write(fn, seccomp), "Unable to write seccomp profile.", {
+		ASSERT(fs.write(fn, seccomp), "Host problem? Unable to write seccomp profile.", {
 			fn = "config()",
 			filename = fn,
 		})
