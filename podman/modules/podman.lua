@@ -79,7 +79,6 @@ local ASSERT = function(ret, msg, tbl)
 		return lopper.panic(msg, tbl)
 	end
 end
-local E = {}
 local podman = exec.ctx("podman")
 local get_id = function(n)
 	local try = util.retry_f(podman)
@@ -174,7 +173,7 @@ local update_hosts = function()
 		}
 	)
 end
-E.reserve_idmap = function(id)
+local Reserve_IDMAP = function(id)
 	id = id or lopper.id
 	local n = 2001234560
 	local max = 2147483647
@@ -199,7 +198,7 @@ E.reserve_idmap = function(id)
 	})
 	return key
 end
-E.release_idmap = function(key)
+local Release_IDMAP = function(key)
 	local n = tonumber(key)
 	local kv_idmap = bitcask.open("/etc/podman.etcdb/idmap")
 	local r = kv_idmap:delete(key)
@@ -209,7 +208,7 @@ E.release_idmap = function(key)
 	})
 	return r
 end
-E.running = function(direct)
+local Running = function(direct)
 	if not direct then
 		return kv_running:keys()
 	end
@@ -232,12 +231,12 @@ E.running = function(direct)
 	end
 	return names
 end
-E.ports = function(srv)
+local Ports = function(srv)
 	-- From etcdb
 	local ports = kv_service:get(schema.service_ports:format(srv))
 	return json.decode(ports)
 end
-E.volume = get_volume
+local Get_Volume = get_volume
 local stop = function(T)
 	-- Does removal from kv_running etcdb and updates dns hosts.
 	local c = T.reg.cname
@@ -401,7 +400,7 @@ local start = function(T, stats)
 	end
 	OK("Started container(service).", data)
 end
-E.enable = function(c)
+local Enable = function(c)
 	local systemctl = exec.ctx("systemctl")
 	local so, se
 	systemctl({"daemon-reload"})
@@ -563,7 +562,7 @@ local pull = function(u, t)
 		stderr = se,
 	})
 end
-E.config = function(p)
+local Config = function(p)
 	local M = {}
 	M.start = start
 	M.stop = stop
@@ -842,4 +841,13 @@ E.config = function(p)
 	end
 	return M
 end
-return E
+return {
+	config = Config,
+	enable = Enable,
+	get_volume = Get_Volume,
+	ports = Ports,
+	running = Running,
+	reserve_idmap = Reserve_IDMAP,
+	release_idmap = Release_IDMAP,
+}
+
