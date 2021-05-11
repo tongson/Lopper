@@ -609,7 +609,7 @@ E.config = function(p)
 		M.reg.cname = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
 	elseif M.param.NETWORK == "private" or M.param.NETWORK == "isolated" then
 		local netns = ("/var/run/netns/%s"):format(M.param.NAME)
-		ASSERT((fs.isdir(netns) == nil), "Network namespace already exists.", {
+		ASSERT((fs.isdir(netns) == nil), "Network namespace already exists. Use another name.", {
 			fn = "config()",
 			name = M.param.NAME,
 		})
