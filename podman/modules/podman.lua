@@ -816,7 +816,7 @@ E.config = function(p)
 		})
 		do --> Record into etcdb
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
-			ASSERT(kx, "Unable to add service to etcdb.", {
+			ASSERT(kx, "Host problem? Unable to add service to etcdb.", {
 				fn = "config()",
 				error = ky,
 			})
