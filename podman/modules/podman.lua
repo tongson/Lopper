@@ -785,35 +785,40 @@ E.config = function(p)
 	DEBUG("Start or exit depending of type of container...", {})
 	if M.param.NETWORK == "host" then
 		local systemctl = exec.ctx("systemctl")
-		local r, so, se
-		r, so, se = systemctl({
-			"enable",
-			"--no-block",
-			"--now",
-			("%s.service"):format(M.param.NAME),
-		})
-		ASSERT(r, "Unable to start service. Check the unit journal.", {
-			fn = "config()",
-			command = "systemctl enable",
-			service = M.param.NAME,
-			stdout = so,
-			stderr = se,
-		})
+		do
+			local r, so, se
+			r, so, se = systemctl({
+				"enable",
+				"--no-block",
+				"--now",
+				("%s.service"):format(M.param.NAME),
+			})
+			ASSERT(r, "Unable to start service. Check the unit journal.", {
+				fn = "config()",
+				command = "systemctl enable",
+				service = M.param.NAME,
+				stdout = so,
+				stderr = se,
+			})
+		end
 		local is_active = function()
-			_, so, se = systemctl({ "is-active", M.param.NAME })
+			local _, so, se = systemctl({ "is-active", M.param.NAME })
 			if so == "active\n" then
 				return true
 			else
 				return nil, so, se
 			end
 		end
-		local cmd = util.retry_f(is_active, 10)
-		ASSERT(cmd(), "Failed starting container. Check the unit journal.", {
-			fn = "config()",
-			name = M.param.NAME,
-			stdout = so,
-			stderr = se,
-		})
+		do
+			local cmd = util.retry_f(is_active, 10)
+			local r, so, se = cmd()
+			ASSERT(r, "Failed starting container. Check the unit journal.", {
+				fn = "config()",
+				name = M.param.NAME,
+				stdout = so,
+				stderr = se,
+			})
+		end
 		do --> Record into etcdb
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
 			ASSERT(kx, "Host problem? Unable to add service to etcdb.", {
