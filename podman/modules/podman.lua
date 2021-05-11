@@ -669,7 +669,7 @@ E.config = function(p)
 				schema.service_ports:format(M.param.NAME),
 				json.encode(instance.ports)
 			)
-			ASSERT(kx, "Unable to add ports to etcdb.", {
+			ASSERT(kx, "Host problem? Unable to add ports to etcdb.", {
 				fn = "config()",
 				error = ky,
 			})
