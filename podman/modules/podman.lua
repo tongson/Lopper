@@ -754,7 +754,7 @@ E.config = function(p)
 	DEBUG("Assigning IP...", {})
 	if M.param.IP and M.param.NETWORK == "host" then
 		local r = exec.command("ip", { "link", "show", M.param.NAME })
-		ASSERT((r == nil), "Device already exists.", {
+		ASSERT((r == nil), "BUG? Device already exists.", {
 			fn = "config()",
 			command = "ip link show",
 			name = M.param.NAME,
