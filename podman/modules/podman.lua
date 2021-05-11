@@ -132,7 +132,7 @@ local volume = function(vt)
 	for x, y in pairs(vt) do
 		if not found[x] then
 			local ret, so, se = podman({ "volume", "create", x })
-			ASSERT(ret, "Unable to create volume.", {
+			ASSERT(ret, "Host problem? Unable to create volume.", {
 				fn = "volume()",
 				command = "volume create",
 				stdout = so,
