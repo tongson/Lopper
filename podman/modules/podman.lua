@@ -350,7 +350,7 @@ local start = function(T, stats)
 				x = json.decode(jo)
 			until type(x) == "table" or tt == 10
 			if tt == 10 then
-				ASSERT(nil, "Did not return a valid output.", {
+				ASSERT(nil, "BUG? Did not return a valid output.", {
 					fn = "start()",
 					name = c,
 					command = "podman stats",
