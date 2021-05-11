@@ -760,7 +760,7 @@ E.config = function(p)
 			name = M.param.NAME,
 		})
 		local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
-		ASSERT(kx, "Unable to add ip to etcdb.", {
+		ASSERT(kx, "Host problem? Unable to add ip to etcdb.", {
 			fn = "config()",
 			error = ky,
 		})
