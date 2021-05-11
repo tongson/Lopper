@@ -57,9 +57,9 @@ local kv_service = bitcask.open("/etc/podman.etcdb/service")
 local lopper = require("lopper")
 local json = require("json")
 local util = require("util")
-local Ok = function(msg, tbl)
+local OK = function(msg, tbl)
 	tbl._module = DSL
-	return lopper.Ok(msg, tbl)
+	return lopper.OK(msg, tbl)
 end
 local Warn = function(msg, tbl)
 	tbl._module = DSL
@@ -193,7 +193,7 @@ E.reserve_idmap = function(id)
 		what = "reserve_idmap()",
 		idmap = tostring(n),
 	})
-	Ok("Reserved idmap allocation.", {
+	OK("Reserved idmap allocation.", {
 		range = key .. "-" .. tostring(n+65536),
 		mark = id,
 	})
@@ -204,7 +204,7 @@ E.release_idmap = function(key)
 	local kv_idmap = bitcask.open("/etc/podman.etcdb/idmap")
 	local r = kv_idmap:delete(key)
 	kv_idmap:close()
-	Ok("Released idmap allocation.", {
+	OK("Released idmap allocation.", {
 		range = key .. "-" .. tostring(n+65536),
 	})
 	return r
@@ -272,7 +272,7 @@ local stop = function(T)
 		end
 		update_hosts()
 	end
-	Ok("Stopped container(service).", {
+	OK("Stopped container(service).", {
 		name = c,
 	})
 end
@@ -399,7 +399,7 @@ local start = function(T, stats)
 		fs.write(("%s/%s.status.json"):format(logdir, c), to)
 		fs.write(("%s/%s.output.json"):format(logdir, c), json.encode(data))
 	end
-	Ok("Started container(service).", data)
+	OK("Started container(service).", data)
 end
 E.enable = function(c)
 	local systemctl = exec.ctx("systemctl")
@@ -434,7 +434,7 @@ E.enable = function(c)
 		end
 		update_hosts()
 	end
-	Ok("Started container(service).", {
+	OK("Started container(service).", {
 		name = c,
 	})
 end
@@ -826,11 +826,11 @@ E.config = function(p)
 		end
 		kv_running:close()
 		kv_service:close()
-		Ok("Started systemd unit", {
+		OK("Started systemd unit", {
 			name = M.param.NAME,
 		})
 	else
-		Ok("Container setup done.", {
+		OK("Container setup done.", {
 			name = M.reg.cname,
 			network = M.param.NETWORK,
 		})
