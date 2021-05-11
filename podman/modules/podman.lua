@@ -175,7 +175,7 @@ local update_hosts = function()
 	)
 end
 E.reserve_idmap = function(id)
-	id = id or lopper.ID
+	id = id or lopper.id
 	local n = 2001234560
 	local max = 2147483647
 	local kv_idmap = bitcask.open("/etc/podman.etcdb/idmap")
