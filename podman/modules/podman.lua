@@ -318,7 +318,7 @@ local start = function(T, stats)
 	local data
 	if not stats then
 		local cmd = util.retry_f(is_active, 10)
-		ASSERT(cmd(), "Failed starting container.", {
+		ASSERT(cmd(), "Failed starting container. Check the unit journal.", {
 			fn = "start()",
 			command = "systemctl is-active",
 			name = c,
