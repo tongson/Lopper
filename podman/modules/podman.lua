@@ -105,7 +105,7 @@ local get_volume = function(n)
 		"inspect",
 		"--all",
 	})
-	ASSERT(ret, "Failure listing volumes", {
+	ASSERT(ret, "No such volume or failure listing volumes.", {
 		fn = "get_volume()",
 		command = "volume inspect",
 		stdout = so,
