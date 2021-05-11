@@ -693,9 +693,9 @@ E.config = function(p)
 					su[#su + 1] = ([[--volume %s:%s \]]):format(k, v)
 				end
 			end
-			if M.param.NETWORK == "isolated" then
+			if M.param.NETWORK == "isolated" or M.param.NETWORK == "private" then
 				su[#su + 1] = [[--dns none \]]
-			else
+			elseif M.param.NETWORK == "host" then
 				su[#su + 1] = [[--dns 127.255.255.53 \]]
 			end
 			if M.param.IDMAP then
