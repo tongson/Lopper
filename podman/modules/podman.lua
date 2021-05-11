@@ -509,12 +509,12 @@ local podman_interpolate = function(A)
 		changed = false,
 		to = A.param.SHARES,
 	})
-	unit, changed = unit:gsub("__NETWORK__", A.reg.NETWORK)
+	unit, changed = unit:gsub("__NETWORK__", A.reg.network)
 	-- Should only match once.
 	ASSERT((changed == 1), "Unable to interpolate --network.", {
 		fn = "podman_interpolate() -> string.gsub()",
 		changed = false,
-		to = A.reg.NETWORK,
+		to = A.reg.network,
 	})
 	ASSERT(fs.write(fname, unit), "Unable to write unit.", {
 		fn = "podman_interpolate() -> fs.write()",
