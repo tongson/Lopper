@@ -279,7 +279,7 @@ end
 local start = function(T, stats)
 	local c = T.reg.CNAME
 	fs.mkdir("/var/log/podman") -- Checked in the next mkdir()
-	local logdir = "/var/log/podman/" .. lopper.ID
+	local logdir = "/var/log/podman/" .. lopper.id
 	if not fs.isdir(logdir) then
 		ASSERT(fs.mkdir(logdir), "Unable to create logging directory.", {
 			fn = "start()",
