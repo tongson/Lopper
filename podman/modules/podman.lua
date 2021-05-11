@@ -240,7 +240,7 @@ end
 E.volume = get_volume
 local stop = function(T)
 	-- Does removal from kv_running etcdb and updates dns hosts.
-	local c = T.reg.CNAME
+	local c = T.reg.cname
 	local systemctl = exec.ctx("systemctl")
 	local so, se
 	systemctl({ "disable", "--no-block", "--now", c })
@@ -277,7 +277,7 @@ local stop = function(T)
 	})
 end
 local start = function(T, stats)
-	local c = T.reg.CNAME
+	local c = T.reg.cname
 	fs.mkdir("/var/log/podman") -- Checked in the next mkdir()
 	local logdir = "/var/log/podman/" .. lopper.id
 	if not fs.isdir(logdir) then
