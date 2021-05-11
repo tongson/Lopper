@@ -189,7 +189,7 @@ E.reserve_idmap = function(id)
 		end
 	until ok or n > max
 	kv_idmap:close()
-	ASSERT((n > max), "Reached maximum possible allocation.", {
+	ASSERT((n > max), "Reached maximum possible allocation. Clean up allocation database.", {
 		fn = "reserve_idmap()",
 		idmap = tostring(n),
 	})
