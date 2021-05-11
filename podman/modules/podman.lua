@@ -61,7 +61,7 @@ local OK = function(msg, tbl)
 	tbl._module = DSL
 	return lopper.ok(msg, tbl)
 end
-local Warn = function(msg, tbl)
+local WARN = function(msg, tbl)
 	tbl._module = DSL
 	return lopper.warn(msg, tbl)
 end
@@ -634,7 +634,7 @@ E.config = function(p)
 		for k, v in pairs(M.param.ENVIRONMENT) do
 			if (k:upper()):contains("PASSWORD") then
 				if password.strength(v) < 4 then
-					Warn("Weak password!!", {
+					WARN("Weak password!!", {
 						password = v
 					})
 				end
