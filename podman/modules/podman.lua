@@ -234,7 +234,11 @@ end
 local Ports = function(srv)
 	-- From etcdb
 	local ports = kv_service:get(schema.service_ports:format(srv))
-	return json.decode(ports)
+	local ret = json.decode(ports)
+	ASSERT((type(ret) == "table"), "BUG? The etcdb path did not return a valid value.", {
+		returned = ports,
+		decoded = ret,
+	})
 end
 local Get_Volume = get_volume
 local stop = function(T)
