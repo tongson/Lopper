@@ -71,7 +71,7 @@ local Debug = function(msg, tbl)
 		return lopper.Debug(msg, tbl)
 	end
 end
-local Assert = function(ret, msg, tbl)
+local ASSERT = function(ret, msg, tbl)
 	if ret == nil then
 		tbl._module = DSL
 		kv_running:close()
@@ -89,7 +89,7 @@ local get_id = function(n)
 			"json",
 			n,
 		})
-	Assert(r, "Unable to find container.", {
+	ASSERT(r, "Unable to find container.", {
 		what = "get_id()",
 		stdout = so,
 		stderr = se,
@@ -105,7 +105,7 @@ local get_volume = function(n)
 		"inspect",
 		"--all",
 	})
-	Assert(ret, "Failure listing volumes", {
+	ASSERT(ret, "Failure listing volumes", {
 		what = "get_volume()",
 		command = "volume inspect",
 		stdout = so,
@@ -132,7 +132,7 @@ local volume = function(vt)
 	for x, y in pairs(vt) do
 		if not found[x] then
 			local ret, so, se = podman({ "volume", "create", x })
-			Assert(ret, "Unable to create volume.", {
+			ASSERT(ret, "Unable to create volume.", {
 				what = "volume()",
 				command = "volume create",
 				stdout = so,
@@ -144,7 +144,7 @@ local volume = function(vt)
 		if type(y) == "table" then
 			for _, cmd in ipairs(y) do
 				local ret, so, se = sh({ "-c", cmd:gsub("__MOUNTPOINT__", mountpoint) })
-				Assert(ret, "Failure executing volume command", {
+				ASSERT(ret, "Failure executing volume command", {
 					what = "volume()",
 					command = "volume ls",
 					stdout = so,
@@ -166,7 +166,7 @@ local update_hosts = function()
 	end
 	hosts[#hosts + 1] = ""
 	local hosts_file = table.concat(hosts, "\n")
-	Assert(
+	ASSERT(
 		fs.write(dns_config .. "/hosts", hosts_file),
 		"Unable to write system HOSTS file",
 		{
@@ -189,7 +189,7 @@ E.reserve_idmap = function(id)
 		end
 	until ok or n > max
 	kv_idmap:close()
-	Assert((n > max), "Reached maximum possible allocation.", {
+	ASSERT((n > max), "Reached maximum possible allocation.", {
 		what = "reserve_idmap()",
 		idmap = tostring(n),
 	})
@@ -215,7 +215,7 @@ E.running = function(direct)
 	end
 	-- Not from the etcdb but directly from podman
 	local r, so, se = podman({ "ps", "-a", "--format", "json" })
-	Assert(r, "Failure running podman command.", {
+	ASSERT(r, "Failure running podman command.", {
 		what = "running()",
 		command = "podman ps",
 		stdout = so,
@@ -253,7 +253,7 @@ local stop = function(T)
 		end
 	end
 	local cmd = util.retry_f(is_inactive, 10)
-	Assert(cmd(), "Failed stopping container.", {
+	ASSERT(cmd(), "Failed stopping container.", {
 		what = "stop()",
 		command = "systemctl is-active",
 		name = c,
@@ -265,7 +265,7 @@ local stop = function(T)
 			local try = util.retry_f(kv_running.delete)
 			local deleted = try(kv_running, c)
 			kv_running:close()
-			Assert(deleted, "Unable to remove container from etcdb/running.", {
+			ASSERT(deleted, "Unable to remove container from etcdb/running.", {
 				what = "stop()",
 				name = c,
 			})
@@ -281,7 +281,7 @@ local start = function(T, stats)
 	fs.mkdir("/var/log/podman") -- Checked in the next mkdir()
 	local logdir = "/var/log/podman/" .. lopper.ID
 	if not fs.isdir(logdir) then
-		Assert(fs.mkdir(logdir), "Unable to create logging directory.", {
+		ASSERT(fs.mkdir(logdir), "Unable to create logging directory.", {
 			what = "start()",
 			directory = logdir,
 		})
@@ -290,7 +290,7 @@ local start = function(T, stats)
 	local cursor
 	do
 		local r, so, se = journalctl({"-u", c, "-o", "json", "-n", "1"})
-		Assert(r, "Unable to get cursor from journalctl.", {
+		ASSERT(r, "Unable to get cursor from journalctl.", {
 			name = c,
 			what = "start()",
 			command = "journalctl",
@@ -318,7 +318,7 @@ local start = function(T, stats)
 	local data
 	if not stats then
 		local cmd = util.retry_f(is_active, 10)
-		Assert(cmd(), "Failed starting container.", {
+		ASSERT(cmd(), "Failed starting container.", {
 			what = "start()",
 			command = "systemctl is-active",
 			name = c,
@@ -350,7 +350,7 @@ local start = function(T, stats)
 				x = json.decode(jo)
 			until type(x) == "table" or tt == 10
 			if tt == 10 then
-				Assert(nil, "Did not return a valid output.", {
+				ASSERT(nil, "Did not return a valid output.", {
 					what = "start()",
 					name = c,
 					command = "podman stats",
@@ -415,7 +415,7 @@ E.enable = function(c)
 		end
 	end
 	local cmd = util.retry_f(is_active, 10)
-	Assert(cmd(), "Failed starting container.", {
+	ASSERT(cmd(), "Failed starting container.", {
 		what = "enable()",
 		command = "systemctl enable",
 		name = c,
@@ -427,7 +427,7 @@ E.enable = function(c)
 			local try = util.retry_f(kv_running.put)
 			local added = try(kv_running, c)
 			kv_running:close()
-			Assert(added, "Unable to add container to etcdb/running", {
+			ASSERT(added, "Unable to add container to etcdb/running", {
 				what = "enable() -> put()",
 				name = c,
 			})
@@ -460,7 +460,7 @@ local podman_interpolate = function(A)
 	if not A.param.ROOT then
 		unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
 		-- Should only match once.
-		Assert((changed == 1), "Unable to interpolate image ID.", {
+		ASSERT((changed == 1), "Unable to interpolate image ID.", {
 			what = "podman_interpolate() -> string.gsub()",
 			changed = false,
 			to = A.reg.id,
@@ -469,20 +469,20 @@ local podman_interpolate = function(A)
 		unit = A.reg.unit
 	end
 	unit, changed = unit:gsub("__NAME__", A.param.NAME)
-	Assert((changed > 1), "Unable to interpolate name.", {
+	ASSERT((changed > 1), "Unable to interpolate name.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.NAME,
 	})
 	unit, changed = unit:gsub("__CNAME__", A.reg.cname)
-	Assert((changed == 4), "Unable to interpolate container name.", {
+	ASSERT((changed == 4), "Unable to interpolate container name.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.reg.name,
 	})
 	if unit:contains("__IP__") then
 		unit, changed = unit:gsub("__IP__", A.param.IP)
-		Assert((changed >= 1), "Unable to interpolate IP.", {
+		ASSERT((changed >= 1), "Unable to interpolate IP.", {
 			what = "podman_interpolate() -> string.gsub()",
 			changed = false,
 			to = A.param.IP,
@@ -490,33 +490,33 @@ local podman_interpolate = function(A)
 	end
 	unit, changed = unit:gsub("__CPUS__", A.param.CPUS)
 	-- Should only match once.
-	Assert((changed == 1), "Unable to interpolate --cpuset-cpus.", {
+	ASSERT((changed == 1), "Unable to interpolate --cpuset-cpus.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.CPUS,
 	})
 	unit, changed = unit:gsub("__MEM__", A.param.MEM)
 	-- Should only match once.
-	Assert((changed == 1), "Unable to interpolate --memory.", {
+	ASSERT((changed == 1), "Unable to interpolate --memory.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.MEM,
 	})
 	unit, changed = unit:gsub("__SHARES__", A.param.SHARES)
 	-- Should only match once.
-	Assert((changed == 1), "Unable to interpolate --cpu-shares.", {
+	ASSERT((changed == 1), "Unable to interpolate --cpu-shares.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.SHARES,
 	})
 	unit, changed = unit:gsub("__NETWORK__", A.reg.NETWORK)
 	-- Should only match once.
-	Assert((changed == 1), "Unable to interpolate --network.", {
+	ASSERT((changed == 1), "Unable to interpolate --network.", {
 		what = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.reg.NETWORK,
 	})
-	Assert(fs.write(fname, unit), "Unable to write unit.", {
+	ASSERT(fs.write(fname, unit), "Unable to write unit.", {
 		what = "podman_interpolate() -> fs.write()",
 		file = fname,
 	})
@@ -527,7 +527,7 @@ local id = function(u, t)
 		"--format",
 		"json",
 	})
-	Assert(r, "Unable to list images.", {
+	ASSERT(r, "Unable to list images.", {
 		what = "id()",
 		command = "podman images",
 		stdout = so,
@@ -554,7 +554,7 @@ local pull = function(u, t)
 		table.insert(pt, 2, "--creds")
 	end
 	local r, so, se = podman(pt)
-	Assert(r, "Unable to pull image.", {
+	ASSERT(r, "Unable to pull image.", {
 		what = "pull()",
 		command = "podman pull",
 		url = u,
@@ -587,7 +587,7 @@ E.config = function(p)
 	M.param = {} --> from user
 	M.reg = {} --> generated
 	for k in pairs(p) do
-		Assert(param[k], "Invalid parameter given.", {
+		ASSERT(param[k], "Invalid parameter given.", {
 			what = "config()",
 			parameter = k,
 		})
@@ -609,7 +609,7 @@ E.config = function(p)
 		M.reg.cname = ("%s.%s"):format(M.param.NETWORK, M.param.NAME)
 	elseif M.param.NETWORK == "private" or M.param.NETWORK == "isolated" then
 		local netns = ("/var/run/netns/%s"):format(M.param.NAME)
-		Assert((fs.isdir(netns) == nil), "Network namespace already exists.", {
+		ASSERT((fs.isdir(netns) == nil), "Network namespace already exists.", {
 			what = "config()",
 			name = M.param.NAME,
 		})
@@ -623,7 +623,7 @@ E.config = function(p)
 	Debug("Processing ENVIRONMENT parameter...", {})
 	if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
 		local js = json.decode(fs.read(M.param.ENVIRONMENT))
-		Assert(js, "Invalid JSON.", {
+		ASSERT(js, "Invalid JSON.", {
 			what = "config()",
 			file = M.param.ENVIRONMENT
 		})
@@ -669,7 +669,7 @@ E.config = function(p)
 				schema.service_ports:format(M.param.NAME),
 				json.encode(instance.ports)
 			)
-			Assert(kx, "Unable to add ports to etcdb.", {
+			ASSERT(kx, "Unable to add ports to etcdb.", {
 				what = "config()",
 				error = ky,
 			})
@@ -754,13 +754,13 @@ E.config = function(p)
 	Debug("Assigning IP...", {})
 	if M.param.IP and M.param.NETWORK == "host" then
 		local r = exec.command("ip", { "link", "show", M.param.NAME })
-		Assert((r == nil), "Device already exists.", {
+		ASSERT((r == nil), "Device already exists.", {
 			what = "config()",
 			command = "ip link show",
 			name = M.param.NAME,
 		})
 		local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
-		Assert(kx, "Unable to add ip to etcdb.", {
+		ASSERT(kx, "Unable to add ip to etcdb.", {
 			what = "config()",
 			error = ky,
 		})
@@ -771,14 +771,14 @@ E.config = function(p)
 		local fn = ("/etc/podman.seccomp/%s.json"):format(M.reg.cname)
 		local default = require("seccomp")
 		local seccomp = json.encode(default)
-		Assert(fs.write(fn, seccomp), "Unable to write seccomp profile.", {
+		ASSERT(fs.write(fn, seccomp), "Unable to write seccomp profile.", {
 			what = "config()",
 			filename = fn,
 		})
 	end
 	Debug("Generating systemd unit...", {})
 	podman_interpolate(M)
-	Assert(fs.isfile("/etc/systemd/system/" .. M.reg.cname .. ".service"), "Failed to generate unit.", {
+	ASSERT(fs.isfile("/etc/systemd/system/" .. M.reg.cname .. ".service"), "Failed to generate unit.", {
 		what = "config()",
 		unit = M.reg.cname .. ".service"
 	})
@@ -792,7 +792,7 @@ E.config = function(p)
 			"--now",
 			("%s.service"):format(M.param.NAME),
 		})
-		Assert(r, "Unable to start service.", {
+		ASSERT(r, "Unable to start service.", {
 			what = "config()",
 			command = "systemctl enable",
 			service = M.param.NAME,
@@ -808,7 +808,7 @@ E.config = function(p)
 			end
 		end
 		local cmd = util.retry_f(is_active, 10)
-		Assert(cmd(), "Failed starting container.", {
+		ASSERT(cmd(), "Failed starting container.", {
 			what = "config()",
 			name = M.param.NAME,
 			stdout = so,
@@ -816,7 +816,7 @@ E.config = function(p)
 		})
 		do --> Record into etcdb
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
-			Assert(kx, "Unable to add service to etcdb.", {
+			ASSERT(kx, "Unable to add service to etcdb.", {
 				what = "config()",
 				error = ky,
 			})
