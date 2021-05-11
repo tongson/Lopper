@@ -59,16 +59,16 @@ local json = require("json")
 local util = require("util")
 local OK = function(msg, tbl)
 	tbl._module = DSL
-	return lopper.OK(msg, tbl)
+	return lopper.ok(msg, tbl)
 end
 local Warn = function(msg, tbl)
 	tbl._module = DSL
-	return lopper.Warn(msg, tbl)
+	return lopper.warn(msg, tbl)
 end
 local DEBUG = function(msg, tbl)
 	if DEBUG then
 		tbl._module = DSL
-		return lopper.DEBUG(msg, tbl)
+		return lopper.debug(msg, tbl)
 	end
 end
 local ASSERT = function(ret, msg, tbl)
@@ -76,7 +76,7 @@ local ASSERT = function(ret, msg, tbl)
 		tbl._module = DSL
 		kv_running:close()
 		kv_service:close()
-		return lopper.Panic(msg, tbl)
+		return lopper.panic(msg, tbl)
 	end
 end
 local E = {}
