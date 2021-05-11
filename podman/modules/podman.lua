@@ -89,7 +89,7 @@ local get_id = function(n)
 			"json",
 			n,
 		})
-	ASSERT(r, "Unable to find container.", {
+	ASSERT(r, "BUG? Unable to find container.", {
 		fn = "get_id()",
 		stdout = so,
 		stderr = se,
