@@ -144,7 +144,7 @@ local volume = function(vt)
 		if type(y) == "table" then
 			for _, cmd in ipairs(y) do
 				local ret, so, se = sh({ "-c", cmd:gsub("__MOUNTPOINT__", mountpoint) })
-				ASSERT(ret, "Failure executing volume command", {
+				ASSERT(ret, "Failure executing volume command in systemd module.", {
 					fn = "volume()",
 					command = "volume ls",
 					stdout = so,
