@@ -60,7 +60,7 @@ local InterfaceAddr = function(interface, ver)
 	local ip = exec.ctx("ip")
 	local ret, so, se = ip({ "-j", "addr" })
 	if not ret then
-		Panic("ip command failed.", {
+		Panic("ip(8) command failed.", {
 			command = "ip",
 			fn = "InterfaceAddr",
 			stdout = so,
