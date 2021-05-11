@@ -589,9 +589,10 @@ local Config = function(p)
 	DEBUG("Processing ENVIRONMENT parameter...", {})
 	if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
 		local js = json.decode(fs.read(M.param.ENVIRONMENT))
-		ASSERT(js, "Invalid JSON.", {
+		ASSERT((type(js) == "table"), "Invalid JSON.", {
 			fn = "config()",
-			file = M.param.ENVIRONMENT
+			file = M.param.ENVIRONMENT,
+			returned = js,
 		})
 		M.param.ENVIRONMENT = js
 	end
