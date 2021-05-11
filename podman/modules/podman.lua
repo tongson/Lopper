@@ -778,7 +778,7 @@ E.config = function(p)
 	end
 	DEBUG("Generating systemd unit...", {})
 	podman_interpolate(M)
-	ASSERT(fs.isfile("/etc/systemd/system/" .. M.reg.cname .. ".service"), "Failed to generate unit.", {
+	ASSERT(fs.isfile("/etc/systemd/system/" .. M.reg.cname .. ".service"), "BUG? Failed to generate unit.", {
 		fn = "config()",
 		unit = M.reg.cname .. ".service"
 	})
