@@ -792,7 +792,7 @@ E.config = function(p)
 			"--now",
 			("%s.service"):format(M.param.NAME),
 		})
-		ASSERT(r, "Unable to start service.", {
+		ASSERT(r, "Unable to start service. Check the unit journal.", {
 			fn = "config()",
 			command = "systemctl enable",
 			service = M.param.NAME,
