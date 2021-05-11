@@ -1,5 +1,5 @@
 local DSL = "podman"
-local DEBUG = false --> Toggle DEBUG() calls
+local DEBUGGING = false --> Toggle DEBUG() calls
 local HOST = false --> Toggle --network host mode
 local domain = os.getenv("PODMAN_DOMAIN") or "host.local"
 local creds = os.getenv("PODMAN_CREDS")
@@ -66,7 +66,7 @@ local WARN = function(msg, tbl)
 	return lopper.warn(msg, tbl)
 end
 local DEBUG = function(msg, tbl)
-	if DEBUG then
+	if DEBUGGING then
 		tbl._module = DSL
 		return lopper.debug(msg, tbl)
 	end
