@@ -1,5 +1,5 @@
 local DSL = "podman"
-local DEBUG = false --> Toggle Debug() calls
+local DEBUG = false --> Toggle DEBUG() calls
 local HOST = false --> Toggle --network host mode
 local domain = os.getenv("PODMAN_DOMAIN") or "host.local"
 local creds = os.getenv("PODMAN_CREDS")
@@ -65,10 +65,10 @@ local Warn = function(msg, tbl)
 	tbl._module = DSL
 	return lopper.Warn(msg, tbl)
 end
-local Debug = function(msg, tbl)
+local DEBUG = function(msg, tbl)
 	if DEBUG then
 		tbl._module = DSL
-		return lopper.Debug(msg, tbl)
+		return lopper.DEBUG(msg, tbl)
 	end
 end
 local ASSERT = function(ret, msg, tbl)
@@ -599,7 +599,7 @@ E.config = function(p)
 	M.param.IP = M.param.IP or "127.0.0.1"
 	M.param.SHARES = M.param.SHARES or "1024"
 	M.param.NETWORK = M.param.NETWORK or "host"
-	Debug("Figuring out container name and network mode...", {})
+	DEBUG("Figuring out container name and network mode...", {})
 	if type(M.param.NETWORK) == "table" then
 		M.reg.netdata = util.shallowcopy(M.param.NETWORK)
 		M.param.NETWORK = "isolated"
@@ -620,7 +620,7 @@ E.config = function(p)
 		M.reg.network = M.param.NETWORK
 		M.reg.cname = M.param.NAME
 	end
-	Debug("Processing ENVIRONMENT parameter...", {})
+	DEBUG("Processing ENVIRONMENT parameter...", {})
 	if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
 		local js = json.decode(fs.read(M.param.ENVIRONMENT))
 		ASSERT(js, "Invalid JSON.", {
@@ -641,7 +641,7 @@ E.config = function(p)
 			end
 		end
 	end
-	Debug("Generating systemd unit...", {})
+	DEBUG("Generating systemd unit...", {})
 	local systemd = {}
 	do
 		local reqtry, modul
@@ -743,7 +743,7 @@ E.config = function(p)
 			M.reg.unit = table.concat(su, "\n")
 		end
 	end
-	Debug("Pulling image if needed...", {})
+	DEBUG("Pulling image if needed...", {})
 	if not M.param.ROOT then
 		M.reg.id = id(M.param.URL, M.param.TAG)
 		if M.param.always_update or not M.reg.id then
@@ -751,7 +751,7 @@ E.config = function(p)
 			M.reg.id = id(M.param.URL, M.param.TAG)
 		end
 	end
-	Debug("Assigning IP...", {})
+	DEBUG("Assigning IP...", {})
 	if M.param.IP and M.param.NETWORK == "host" then
 		local r = exec.command("ip", { "link", "show", M.param.NAME })
 		ASSERT((r == nil), "Device already exists.", {
@@ -765,7 +765,7 @@ E.config = function(p)
 			error = ky,
 		})
 	end
-	Debug("Generating seccomp profile...", {})
+	DEBUG("Generating seccomp profile...", {})
 	do
 		fs.mkdir("/etc/podman.seccomp")
 		local fn = ("/etc/podman.seccomp/%s.json"):format(M.reg.cname)
@@ -776,13 +776,13 @@ E.config = function(p)
 			filename = fn,
 		})
 	end
-	Debug("Generating systemd unit...", {})
+	DEBUG("Generating systemd unit...", {})
 	podman_interpolate(M)
 	ASSERT(fs.isfile("/etc/systemd/system/" .. M.reg.cname .. ".service"), "Failed to generate unit.", {
 		what = "config()",
 		unit = M.reg.cname .. ".service"
 	})
-	Debug("Start or exit depending of type of container...", {})
+	DEBUG("Start or exit depending of type of container...", {})
 	if M.param.NETWORK == "host" then
 		local systemctl = exec.ctx("systemctl")
 		local r, so, se
