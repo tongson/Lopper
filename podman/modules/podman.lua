@@ -527,7 +527,7 @@ local id = function(u, t)
 		"--format",
 		"json",
 	})
-	ASSERT(r, "Unable to list images.", {
+	ASSERT(r, "Host problem? Unable to list images.", {
 		fn = "id()",
 		command = "podman images",
 		stdout = so,
