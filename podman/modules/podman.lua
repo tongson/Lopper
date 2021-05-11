@@ -90,7 +90,7 @@ local get_id = function(n)
 			n,
 		})
 	ASSERT(r, "Unable to find container.", {
-		what = "get_id()",
+		fn = "get_id()",
 		stdout = so,
 		stderr = se,
 		command = "podman inspect",
@@ -106,7 +106,7 @@ local get_volume = function(n)
 		"--all",
 	})
 	ASSERT(ret, "Failure listing volumes", {
-		what = "get_volume()",
+		fn = "get_volume()",
 		command = "volume inspect",
 		stdout = so,
 		stderr = se,
@@ -133,7 +133,7 @@ local volume = function(vt)
 		if not found[x] then
 			local ret, so, se = podman({ "volume", "create", x })
 			ASSERT(ret, "Unable to create volume.", {
-				what = "volume()",
+				fn = "volume()",
 				command = "volume create",
 				stdout = so,
 				stderr = se,
@@ -145,7 +145,7 @@ local volume = function(vt)
 			for _, cmd in ipairs(y) do
 				local ret, so, se = sh({ "-c", cmd:gsub("__MOUNTPOINT__", mountpoint) })
 				ASSERT(ret, "Failure executing volume command", {
-					what = "volume()",
+					fn = "volume()",
 					command = "volume ls",
 					stdout = so,
 					stderr = se,
@@ -170,7 +170,7 @@ local update_hosts = function()
 		fs.write(dns_config .. "/hosts", hosts_file),
 		"Unable to write system HOSTS file",
 		{
-			what = "update_hosts()",
+			fn = "update_hosts()",
 		}
 	)
 end
@@ -190,7 +190,7 @@ E.reserve_idmap = function(id)
 	until ok or n > max
 	kv_idmap:close()
 	ASSERT((n > max), "Reached maximum possible allocation.", {
-		what = "reserve_idmap()",
+		fn = "reserve_idmap()",
 		idmap = tostring(n),
 	})
 	OK("Reserved idmap allocation.", {
@@ -216,7 +216,7 @@ E.running = function(direct)
 	-- Not from the etcdb but directly from podman
 	local r, so, se = podman({ "ps", "-a", "--format", "json" })
 	ASSERT(r, "Failure running podman command.", {
-		what = "running()",
+		fn = "running()",
 		command = "podman ps",
 		stdout = so,
 		stderr = se,
@@ -254,7 +254,7 @@ local stop = function(T)
 	end
 	local cmd = util.retry_f(is_inactive, 10)
 	ASSERT(cmd(), "Failed stopping container.", {
-		what = "stop()",
+		fn = "stop()",
 		command = "systemctl is-active",
 		name = c,
 		stdout = so,
@@ -266,7 +266,7 @@ local stop = function(T)
 			local deleted = try(kv_running, c)
 			kv_running:close()
 			ASSERT(deleted, "Unable to remove container from etcdb/running.", {
-				what = "stop()",
+				fn = "stop()",
 				name = c,
 			})
 		end
@@ -282,7 +282,7 @@ local start = function(T, stats)
 	local logdir = "/var/log/podman/" .. lopper.ID
 	if not fs.isdir(logdir) then
 		ASSERT(fs.mkdir(logdir), "Unable to create logging directory.", {
-			what = "start()",
+			fn = "start()",
 			directory = logdir,
 		})
 	end
@@ -292,7 +292,7 @@ local start = function(T, stats)
 		local r, so, se = journalctl({"-u", c, "-o", "json", "-n", "1"})
 		ASSERT(r, "Unable to get cursor from journalctl.", {
 			name = c,
-			what = "start()",
+			fn = "start()",
 			command = "journalctl",
 			stdout = so,
 			stderr = se,
@@ -319,7 +319,7 @@ local start = function(T, stats)
 	if not stats then
 		local cmd = util.retry_f(is_active, 10)
 		ASSERT(cmd(), "Failed starting container.", {
-			what = "start()",
+			fn = "start()",
 			command = "systemctl is-active",
 			name = c,
 			stdout = so,
@@ -351,7 +351,7 @@ local start = function(T, stats)
 			until type(x) == "table" or tt == 10
 			if tt == 10 then
 				ASSERT(nil, "Did not return a valid output.", {
-					what = "start()",
+					fn = "start()",
 					name = c,
 					command = "podman stats",
 				})
@@ -416,7 +416,7 @@ E.enable = function(c)
 	end
 	local cmd = util.retry_f(is_active, 10)
 	ASSERT(cmd(), "Failed starting container.", {
-		what = "enable()",
+		fn = "enable()",
 		command = "systemctl enable",
 		name = c,
 		stdout = so,
@@ -428,7 +428,7 @@ E.enable = function(c)
 			local added = try(kv_running, c)
 			kv_running:close()
 			ASSERT(added, "Unable to add container to etcdb/running", {
-				what = "enable() -> put()",
+				fn = "enable() -> put()",
 				name = c,
 			})
 		end
@@ -461,7 +461,7 @@ local podman_interpolate = function(A)
 		unit, changed = A.reg.unit:gsub("__ID__", A.reg.id)
 		-- Should only match once.
 		ASSERT((changed == 1), "Unable to interpolate image ID.", {
-			what = "podman_interpolate() -> string.gsub()",
+			fn = "podman_interpolate() -> string.gsub()",
 			changed = false,
 			to = A.reg.id,
 		})
@@ -470,20 +470,20 @@ local podman_interpolate = function(A)
 	end
 	unit, changed = unit:gsub("__NAME__", A.param.NAME)
 	ASSERT((changed > 1), "Unable to interpolate name.", {
-		what = "podman_interpolate() -> string.gsub()",
+		fn = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.NAME,
 	})
 	unit, changed = unit:gsub("__CNAME__", A.reg.cname)
 	ASSERT((changed == 4), "Unable to interpolate container name.", {
-		what = "podman_interpolate() -> string.gsub()",
+		fn = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.reg.name,
 	})
 	if unit:contains("__IP__") then
 		unit, changed = unit:gsub("__IP__", A.param.IP)
 		ASSERT((changed >= 1), "Unable to interpolate IP.", {
-			what = "podman_interpolate() -> string.gsub()",
+			fn = "podman_interpolate() -> string.gsub()",
 			changed = false,
 			to = A.param.IP,
 		})
@@ -491,33 +491,33 @@ local podman_interpolate = function(A)
 	unit, changed = unit:gsub("__CPUS__", A.param.CPUS)
 	-- Should only match once.
 	ASSERT((changed == 1), "Unable to interpolate --cpuset-cpus.", {
-		what = "podman_interpolate() -> string.gsub()",
+		fn = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.CPUS,
 	})
 	unit, changed = unit:gsub("__MEM__", A.param.MEM)
 	-- Should only match once.
 	ASSERT((changed == 1), "Unable to interpolate --memory.", {
-		what = "podman_interpolate() -> string.gsub()",
+		fn = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.MEM,
 	})
 	unit, changed = unit:gsub("__SHARES__", A.param.SHARES)
 	-- Should only match once.
 	ASSERT((changed == 1), "Unable to interpolate --cpu-shares.", {
-		what = "podman_interpolate() -> string.gsub()",
+		fn = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.param.SHARES,
 	})
 	unit, changed = unit:gsub("__NETWORK__", A.reg.NETWORK)
 	-- Should only match once.
 	ASSERT((changed == 1), "Unable to interpolate --network.", {
-		what = "podman_interpolate() -> string.gsub()",
+		fn = "podman_interpolate() -> string.gsub()",
 		changed = false,
 		to = A.reg.NETWORK,
 	})
 	ASSERT(fs.write(fname, unit), "Unable to write unit.", {
-		what = "podman_interpolate() -> fs.write()",
+		fn = "podman_interpolate() -> fs.write()",
 		file = fname,
 	})
 end
@@ -528,7 +528,7 @@ local id = function(u, t)
 		"json",
 	})
 	ASSERT(r, "Unable to list images.", {
-		what = "id()",
+		fn = "id()",
 		command = "podman images",
 		stdout = so,
 		stderr = se,
@@ -555,7 +555,7 @@ local pull = function(u, t)
 	end
 	local r, so, se = podman(pt)
 	ASSERT(r, "Unable to pull image.", {
-		what = "pull()",
+		fn = "pull()",
 		command = "podman pull",
 		url = u,
 		tag = t,
@@ -588,7 +588,7 @@ E.config = function(p)
 	M.reg = {} --> generated
 	for k in pairs(p) do
 		ASSERT(param[k], "Invalid parameter given.", {
-			what = "config()",
+			fn = "config()",
 			parameter = k,
 		})
 		M.param[k] = p[k]
@@ -610,7 +610,7 @@ E.config = function(p)
 	elseif M.param.NETWORK == "private" or M.param.NETWORK == "isolated" then
 		local netns = ("/var/run/netns/%s"):format(M.param.NAME)
 		ASSERT((fs.isdir(netns) == nil), "Network namespace already exists.", {
-			what = "config()",
+			fn = "config()",
 			name = M.param.NAME,
 		})
 		M.reg.network = "ns:" .. netns
@@ -624,7 +624,7 @@ E.config = function(p)
 	if M.param.ENVIRONMENT and type(M.param.ENVIRONMENT) == "string" then
 		local js = json.decode(fs.read(M.param.ENVIRONMENT))
 		ASSERT(js, "Invalid JSON.", {
-			what = "config()",
+			fn = "config()",
 			file = M.param.ENVIRONMENT
 		})
 		M.param.ENVIRONMENT = js
@@ -670,7 +670,7 @@ E.config = function(p)
 				json.encode(instance.ports)
 			)
 			ASSERT(kx, "Unable to add ports to etcdb.", {
-				what = "config()",
+				fn = "config()",
 				error = ky,
 			})
 		end
@@ -755,13 +755,13 @@ E.config = function(p)
 	if M.param.IP and M.param.NETWORK == "host" then
 		local r = exec.command("ip", { "link", "show", M.param.NAME })
 		ASSERT((r == nil), "Device already exists.", {
-			what = "config()",
+			fn = "config()",
 			command = "ip link show",
 			name = M.param.NAME,
 		})
 		local kx, ky = kv_service:put(schema.service_ip:format(M.param.NAME), M.param.IP)
 		ASSERT(kx, "Unable to add ip to etcdb.", {
-			what = "config()",
+			fn = "config()",
 			error = ky,
 		})
 	end
@@ -772,14 +772,14 @@ E.config = function(p)
 		local default = require("seccomp")
 		local seccomp = json.encode(default)
 		ASSERT(fs.write(fn, seccomp), "Unable to write seccomp profile.", {
-			what = "config()",
+			fn = "config()",
 			filename = fn,
 		})
 	end
 	DEBUG("Generating systemd unit...", {})
 	podman_interpolate(M)
 	ASSERT(fs.isfile("/etc/systemd/system/" .. M.reg.cname .. ".service"), "Failed to generate unit.", {
-		what = "config()",
+		fn = "config()",
 		unit = M.reg.cname .. ".service"
 	})
 	DEBUG("Start or exit depending of type of container...", {})
@@ -793,7 +793,7 @@ E.config = function(p)
 			("%s.service"):format(M.param.NAME),
 		})
 		ASSERT(r, "Unable to start service.", {
-			what = "config()",
+			fn = "config()",
 			command = "systemctl enable",
 			service = M.param.NAME,
 			stdout = so,
@@ -809,7 +809,7 @@ E.config = function(p)
 		end
 		local cmd = util.retry_f(is_active, 10)
 		ASSERT(cmd(), "Failed starting container.", {
-			what = "config()",
+			fn = "config()",
 			name = M.param.NAME,
 			stdout = so,
 			stderr = se,
@@ -817,7 +817,7 @@ E.config = function(p)
 		do --> Record into etcdb
 			local kx, ky = kv_running:put(M.param.NAME, "ok")
 			ASSERT(kx, "Unable to add service to etcdb.", {
-				what = "config()",
+				fn = "config()",
 				error = ky,
 			})
 		end
