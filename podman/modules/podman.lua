@@ -1,7 +1,7 @@
 local DSL = "podman"
 local DEBUGGING = false --> Toggle DEBUG() calls
 local HOST = false --> Toggle --network host mode
-local domain = os.getenv("PODMAN_DOMAIN") or "host.local"
+local domain = os.getenv("PODMAN_DOMAIN") or "home.arpa"
 local creds = os.getenv("PODMAN_CREDS")
 local systemd_unit_start = {
 	[===[
