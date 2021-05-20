@@ -4,6 +4,7 @@ return {
   syscalls = {
     {
       names = {
+	"select",
 	"klogctl",
         "ioperm",
         "iopl",
