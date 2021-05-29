@@ -3,13 +3,15 @@ local DEBUGGING = false --> Toggle DEBUG() calls
 local HOST = false --> Toggle --network host mode
 local domain = os.getenv("PODMAN_DOMAIN") or "home.arpa"
 local creds = os.getenv("PODMAN_CREDS")
-local systemd_unit_start = {
+local systemd_unit_pre = {
 	[===[
 [Unit]
 Description=__CNAME__ Container
 Wants=network.target
-After=network-online.target
-
+After=network-online.target]===],
+}
+local systemd_unit_start = {
+	[===[
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
 EnvironmentFile=-/etc/podman.env/%p
@@ -645,6 +647,7 @@ local Config = function(p)
 		if instance.unit then
 			M.reg.unit = instance.unit
 		else
+			local si = util.shallowcopy(systemd_unit_pre)
 			local su = util.shallowcopy(systemd_unit_start)
 			if instance.capabilities and next(instance.capabilities) then
 				for _, c in ipairs(instance.capabilities) do
@@ -703,12 +706,19 @@ local Config = function(p)
 					su[#su + 1] = ("ExecStartPre=/usr/sbin/ip netns exec %s ip route add default via %s dev lan0"):format(nm, de)
 				end
 				su[#su + 1] = ("ExecStopPost=/usr/sbin/ip netns del %s"):format(nm)
+			else
+				local nm = M.param.NETWORK
+				si[#si + 1] = ("BindsTo=%s.pod.service"):format(nm)
+				si[#si + 1] = ("After=%s.pod.service"):format(nm)
+				si[#si + 1] = ("PartOf=%s.pod.service"):format(nm)
 			end
 			su[#su + 1] = ""
 			su[#su + 1] = "[Install]"
 			su[#su + 1] = "WantedBy=multi-user.target"
 			su[#su + 1] = ""
-			M.reg.unit = table.concat(su, "\n")
+			local sifin = table.concat(si, "\n")
+			local sufin = table.concat(su, "\n")
+			M.reg.unit = sifin .. "\n\n" .. sufin
 		end
 	end
 	DEBUG("Pulling image if needed...", {})
