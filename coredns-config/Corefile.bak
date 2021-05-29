@@ -1,0 +1,25 @@
+.:53 {
+       bind 127.0.53.1 127.0.0.1
+       bufsize 1232
+       acl {
+               allow net 127.0.0.0/8
+               block
+       }
+       hosts {
+               reload 0
+               fallthrough
+       }
+       loadbalance
+       forward . tls://1.1.1.1 tls://1.0.0.1 {
+               tls_servername cloudflare-dns.com
+       }
+       cache {
+               success 4096
+               denial  1024
+               prefetch 512
+       }
+       import /config/hosts.conf
+       prometheus :9153
+       errors
+       log
+}
