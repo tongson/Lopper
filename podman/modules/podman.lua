@@ -631,6 +631,22 @@ local Config = function(p)
 		else
 			instance = systemd
 		end
+		DEBUG("Generating seccomp profile...", {})
+		do
+			fs.mkdir("/etc/podman.seccomp")
+			local fn = ("/etc/podman.seccomp/%s.json"):format(M.reg.cname)
+			local default = require("seccomp")
+			if instance.allow and next(instance.allow) then
+				for _, syscall in ipairs(instance.allow) do
+					table.filter(default.syscalls[1]["names"], syscall)
+				end
+			end
+			local seccomp = json.encode(default)
+			ASSERT(fs.write(fn, seccomp), "Host problem? Unable to write seccomp profile.", {
+				fn = "config()",
+				filename = fn,
+			})
+		end
 		if instance.volumes and next(instance.volumes) then
 			volume(instance.volumes)
 		end
@@ -741,17 +757,6 @@ local Config = function(p)
 		ASSERT(kx, "Host problem? Unable to add ip to etcdb.", {
 			fn = "config()",
 			error = ky,
-		})
-	end
-	DEBUG("Generating seccomp profile...", {})
-	do
-		fs.mkdir("/etc/podman.seccomp")
-		local fn = ("/etc/podman.seccomp/%s.json"):format(M.reg.cname)
-		local default = require("seccomp")
-		local seccomp = json.encode(default)
-		ASSERT(fs.write(fn, seccomp), "Host problem? Unable to write seccomp profile.", {
-			fn = "config()",
-			filename = fn,
 		})
 	end
 	DEBUG("Generating systemd unit...", {})
