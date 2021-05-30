@@ -504,7 +504,7 @@ local id = function(u, t)
 	})
 	local j = json.decode(so)
 	_, u = util.path_split(u)
-	local name = ("%s:%s"):format(u, t)
+	local name = ("/%s:%s"):format(u, t)
 	for i = 1, #j do
 		if table.find(j[i].Names, name) then
 			return j[i].Id
