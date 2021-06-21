@@ -1,4 +1,7 @@
 return {
+	bool = function()
+		return X
+	end,
 	test = function()
 		return Command
 	end,

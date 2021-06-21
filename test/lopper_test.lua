@@ -1,5 +1,6 @@
 #!/usr/bin/env lopper
 T = require("test")
+X = true
 
 Notify("start Lopper tests...")
 sh = Command("sh")
@@ -60,6 +61,7 @@ end
 dummy = require("lopper_dummy")
 T["environment will cross"] = function()
 	T.is_function(dummy.test())
+	T.is_true(dummy.bool())
 end
 
 dummy = require("lopper_dummy")
