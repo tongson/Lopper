@@ -177,6 +177,15 @@ local Command = function(exe)
 	})
 end
 
+local LOCAL = {}
+setmetatable(ENV, {
+	__newindex = function(_, k, v)
+		return rawset(LOCAL, k, v)
+	end,
+	__index = function(_, value)
+		return rawget(LOCAL, value) or rawget(_G, value) or Panic("Unknown command or variable", { string = value })
+	end,
+})
 _G["Notify"] = setmetatable({}, {
 	__call = function(_, msg, tbl)
 		return Notify_Function(msg, tbl, true)
@@ -223,3 +232,4 @@ package.preload["lopper"] = function()
 	}
 end
 util.format_operator()
+setfenv(1, ENV)
