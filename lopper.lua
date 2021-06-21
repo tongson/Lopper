@@ -177,6 +177,7 @@ local Command = function(exe)
 	})
 end
 
+local ENV = {}
 local LOCAL = {}
 setmetatable(ENV, {
 	__newindex = function(_, k, v)
